@@ -1,16 +1,20 @@
 ## GSN Change log
 
 ### r2.0.1
+
 [commits](https://github.com/LSIR/gsn/commits/gsn-release-2.0.1)
-* Adding support for MQTT (wrapper to subscribe and VS to publish)        
-* Adding coap wrapper       
-* Removing references to decommissioned osper server      
-* Add reference to location fields 
-* Fixing recovery from unsynchronized zmq communication with services      
+
+* Adding support for MQTT (wrapper to subscribe and VS to publish)
+* Adding coap wrapper
+* Removing references to decommissioned osper server
+* Add reference to location fields
+* Fixing recovery from unsynchronized zmq communication with services
 * Fixing some configuration bugs
 
 ### r2.0.0
+
 [commits](https://github.com/LSIR/gsn/commits/gsn-release-2.0.0)
+
 * This is a major release and some of the changes below are NOT backward compatible.
 * Splitting GSN into gsn-core, gsn-extra, gsn-services and gsn-webui.
 * New web UI, based on the GSN API.
@@ -23,7 +27,9 @@
 * Migrating namespace from gsn to ch.epfl.gsn to publish artifacts on Sonatype.
 
 ### r1.1.8
+
 [commits](https://github.com/LSIR/gsn/commits/gsn-release-1.1.8)
+
 * Adding monitoring of GSN internal metrics, output to munin and collectd
 * Adding anomaly detection on streams (outliers, iqr, unique values)
 * Adding the packager ant target for building Debian packages of GSN
@@ -39,7 +45,9 @@
 * Complete rewrite of tinyGSN, using singleton wrappers, queues and publisher. Adding subscription to GSN server and adaptive obfuscation of locations for privacy protection.
 
 ### r1.1.7
+
 [commits](https://github.com/LSIR/gsn/commits/gsn-release-1.1.7)
+
 * Improved tinyGSN background application using AlarmManagers for saving the battery.
 * Timestamp are not anymore shifted in /multidata response
 * Adding possibility for Chart virtual sensor to specify windows length by time
@@ -49,9 +57,10 @@
 * Updating jetty to support disabling of SSLv3 (not supported anymore by firefox 34)
 * Keystore file location can be set in config file
 
-
 ### r1.1.6
+
 [commits](https://github.com/LSIR/gsn/commits/gsn-release-1.1.6)
+
 * Major update on tinyGSN, virtual sensors are running as background services and a scheduler takes care of turning them on and off.
 * Moved GSN sources to /src/main/java
 * Updated licence to GPLv3 or later for compatibility with the libraries
@@ -59,28 +68,31 @@
 * Adding support for pushing multiple stream elements in a single PUT request
 * Updating plots on the webapp (using d3.js), new aggregators, sampling option and scatter plots
 
-
 ### r1.1.5
+
 [commits](https://github.com/LSIR/gsn/commits/gsn-release-1.1.5)
+
 * Added possibility to omit latest values in request '/gsn?REQUEST=0'
-* Added latest values in /sensors response (/service?latest_values=true)
+* Added latest values in /sensors response (/service?latest\_values=true)
 * Added GeoJSON format for RestApi
 * Updated commons codec, upgraded web xml 2.5
 * Added the tinyGSN Android app, and google cloud messaging support
 * Updated ContainerInfoHandler to support non-unique time-stamps
 
-
 ### r1.1.4
+
 [commits](https://github.com/LSIR/gsn/commits/gsn-release-1.1.4)
+
 * Updated the logo and color scheme accordingly
 * Added zeromq wrapper and distribution system
 * Fixed GriddData out of memory
 * Adding support for request 113 in REST API and some refactoring
 * Filtering empty VS in multidata download
 
-
 ### r1.1.3
+
 [commits](https://github.com/LSIR/gsn/commits/gsn-release-1.1.3)
+
 * Added support for HBase storage
 * Updated REST API for accessing data
 * Added access control support for REST PAI
@@ -100,8 +112,8 @@
 * Added the web interface to query the models
 * Added the direct push remote wrapper, which extends the push remote wrapper for device that are not always connected. As the output structure as to be defined in the xml file, the structure of the virtual sensor is slightly modified (added a new optional field) and binding needs to be rebuilt. (JiBX bindings have issues with JRE7, consider using JRE6)
 * Added Direct Remote Push virtual sensor sample
-* Removed deprecation warnings and usage of sun.* API (http://www.oracle.com/technetwork/java/faq-sun-packages-142232.html)
-* Moved duplicated code in gsn.http.ac.* classes to gsn.http.ac.UserUtils as static method
+* Removed deprecation warnings and usage of sun.\* API (http://www.oracle.com/technetwork/java/faq-sun-packages-142232.html)
+* Moved duplicated code in gsn.http.ac.\* classes to gsn.http.ac.UserUtils as static method
 * Added Windows Phone Push service as a connectionless remote push wrapper. This class implements a generic push notification it should be adapted to the specific needs of each mobile application.
 * Added continuous queries over models (merge from branch opensense)
 * Avoid redirection to the login servlet when username and password are provided in the url for datagrid web service; Checking access rights for user in datagrid rest web service
@@ -113,10 +125,10 @@
 * Added support for sub grids and time series generation from grid data
 * Added Semantic Virtual Sensor for exporting data to LSM (http://lsm.deri.ie)
 
-
 ### r1.1.2
 
 [commits](https://github.com/LSIR/gsn/commits/gsn-release-1.1.2)
+
 * New sensorscope listener server fixing problem of missing data
 * Added count-based checkpoints to the CSV wrapper, logging line counts instead of latest timestamp
 * Added new sensor types to sensorscope listener (NO2, CO, CO2, snow height, dendrometer, new temperature and air pressure sensors, data logger voltage, and GPS coordinates)
@@ -127,6 +139,7 @@
 ### r1.1.1
 
 [commits](https://github.com/LSIR/gsn/commits/gsn-release-1.1.1)
+
 * Added URL-based queries for GML handler
 * Added dataclean virtual sensor
 * Added improved version of the jdbc wrapper
@@ -146,6 +159,7 @@
 ### r1.1.0
 
 [commits](https://github.com/LSIR/gsn/commits/gsn-release-1.1.0)
+
 * Added Support for Flexible Storage Manager (processing/storage dbs, per virtual sensor db, in memory processing, transcient virtual sensor).
 * Added Support for Access Control (alpha version, must not be used in production environment yet).
 * Added Support for PostgreSQL as processing/storage db.
@@ -166,6 +180,7 @@
 ### r1.0.1
 
 [commits](https://github.com/LSIR/gsn/commits/gsn-release-1.0.1)
+
 * Added the 'ScriptletProcessor' processing class which can be used to implement arbitrary complex processing class by specifying its logic in the Groovy language, directly in the virtual sensor description file.
 * Added pagination support for MySQL (/data and /multidata servlet and DataDistributer) which enable GSN to stream an arbitrary large amount of data.
 * Fixed OutOfMemory errors due to large amount of data requests.
@@ -176,5 +191,6 @@
 * Fixed the org.apache.commons.dbcp.DelegatingPreparedStatement is closed Exception.
 * Fixed exceptions thrown (such as: java.lang.NumberFormatException: multiple points) due to concurrent access to the /multidata servlet.
 * Integrated the GSN installer in the trunk through the 'installer' ant task.
-* Added the 'download_mode=inline' parameter to the /multidata servlet, in order to get the data not as an attachment.
+* Added the 'download\_mode=inline' parameter to the /multidata servlet, in order to get the data not as an attachment.
 * Removed the unused virtual-sensor pool, marked the 'lifeCyclePool' configuration element as deprecated.
+
