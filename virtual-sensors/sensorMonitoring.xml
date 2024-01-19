@@ -1,0 +1,33 @@
+<virtual-sensor name="SensorMonitorVS" priority="11">
+	<processing-class>
+		<class-name>ch.epfl.gsn.vsensor.BridgeVirtualSensorPermasense</class-name>
+		<output-structure>
+			<field name="SENSOR_NAME" type="varchar(50)"/>
+			<field name="TOTAL_CPU_TIME_COUNTER" type="double" unit="tri"/>
+			<field name="LAST_OUTPUT_TIME" type="double" unit="b"/>
+			<field name="OUTPUT_PRODUCED_COUNTER" type="double" unit="nn"/>
+			<field name="LAST_INPUT_TIME" type = "double"/>
+			<field name="INPUT_PRODUCED_COUNTER" type = "double"/>
+		</output-structure>
+
+	</processing-class>
+	<description>Not Specified, please edit the file</description>
+	<life-cycle pool-size="10" />
+	<addressing>
+		<predicate key="geographical">Geographical data</predicate>
+		<predicate key="LATITUDE">47.26266</predicate>
+		<predicate key="LONGITUDE">11.39454</predicate>		
+	</addressing>
+	<storage history-size="10000" />
+	<streams>
+		<stream name="input1">
+			<source alias="source1" sampling-rate="1" storage-size="1">
+				<address wrapper="sensor-monitoring">
+					<predicate key="sampling-rate">1000</predicate>
+				</address>
+				<query>select SENSOR_NAME,LAST_OUTPUT_TIME,TOTAL_CPU_TIME_COUNTER,OUTPUT_PRODUCED_COUNTER,LAST_INPUT_TIME,INPUT_PRODUCED_COUNTER,TIMED from wrapper</query>
+			</source>
+			<query>select SENSOR_NAME,LAST_OUTPUT_TIME,TOTAL_CPU_TIME_COUNTER,OUTPUT_PRODUCED_COUNTER,LAST_INPUT_TIME,INPUT_PRODUCED_COUNTER,TIMED from source1</query>
+		</stream>
+	</streams>
+</virtual-sensor>

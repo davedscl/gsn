@@ -1,0 +1,309 @@
+@import scala.collection.mutable.Buffer
+@import service.gsn.UserProvider 
+@import controllers.gsn.auth.GSNGroup 
+@import models.gsn.auth._
+@(vs: Buffer[models.gsn.auth.DataSource], groups: Buffer[models.gsn.auth.Group], users: Buffer[models.gsn.auth.User], count:Int, page:Int, pageLength:Int,userProvider: UserProvider) 
+@import helper._ 
+@implicitFieldConstructor = @{ FieldConstructor(twitterBootstrapBasic.f) }
+
+@main(userProvider, Messages("gsn.access.vs.title"), "vslist") {
+    <div id="groups" class="row">
+        <div class="col-md-12">
+            <h1>@Messages("gsn.access.vs.title")</h1>
+        </div>
+    </div>
+    <div id="groups" class="row">
+        <div class="col-xs-12 col-md-12">
+            <div class="row">
+                <div class="col-md-12">
+                    <input type="text" id="searchVs" class="form-control" placeholder="Search Virtual Sensors">
+                </div>
+            </div>  
+            <br>          
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>@Messages("gsn.access.vs.title")</th>
+                        <th>@Messages("gsn.access.vs.allowed.read.users")</th>
+                        <th>@Messages("gsn.access.vs.allowed.read.groups")</th>
+                        <th>@Messages("gsn.access.vs.allowed.write.users")</th>
+                        <th>@Messages("gsn.access.vs.allowed.write.groups")</th>
+                        <th>@Messages("gsn.access.vs.allowed.all")</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for(v <- vs) {
+                    <tr id="row_@v.id" @if(v.is_public){ class="success" }>
+                        <td>@v.value</td>
+                        <td>
+                            <ul class="list-unstyled hideable">
+                                @for(u <- v.userRead) {
+                                <li>@u.user.firstName @u.user.lastName (@u.user.email)
+                                    <button type="button" class="btn btn-danger btn-xs"
+                                        onclick="$.post('@controllers.gsn.auth.routes.PermissionsController.removefromvs(page)?vs_id=' + @v.id + '&id=ur' + @u.user.id, function(data){document.location='@controllers.gsn.auth.routes.PermissionsController.vs(page)'});">@Messages("gsn.access.users.remove")</button>
+                                </li> } @if(v.userRead.size < users.size){
+                                <li><select id="ur_@v.id"> @for(u <- users) {
+                                        @if(null == UserDataSourceRead.findByBoth(u,v)){
+                                        <option value="ur@u.id">@u.firstName @u.lastName
+                                            (@u.email)</option> } }
+                                </select>
+                                    <button type="button" class="btn btn-primary btn-xs"
+                                        onclick="$.post('@controllers.gsn.auth.routes.PermissionsController.addtovs(page)?vs_id=' + @v.id + '&id=' + $('#ur_@v.id').val(), function(data){document.location='@controllers.gsn.auth.routes.PermissionsController.vs(page)'});">@Messages("gsn.access.groups.add")</button>
+                                </li> }
+                            </ul>
+                        </td>
+                        <td>
+                            <ul class="list-unstyled  hideable">
+                                @for(g <- v.groupRead) {
+                                <li>[ @g.group.getName ]
+                                    <button type="button" class="btn btn-danger btn-xs"
+                                        onclick="$.post('@controllers.gsn.auth.routes.PermissionsController.removefromvs(page)?vs_id=' + @v.id + '&id=gr' + @g.group.id, function(data){document.location='@controllers.gsn.auth.routes.PermissionsController.vs(page)'});">@Messages("gsn.access.users.remove")</button>
+                                </li>
+                                <span class="text-muted">
+                                    <ul class="list-inline">
+                                        @for(u <- g.group.users){
+                                        <li>@u.firstName @u.lastName (@u.email)</li> }
+                                    </ul>
+                                </span>
+                                </li> } @if(v.groupRead.size < groups.size){
+                                <li><select id="gr_@v.id"> @for(g <- groups) {
+                                        @if(null == GroupDataSourceRead.findByBoth(g,v)){
+                                        <option value="gr@g.id">[ @g.name ]</option> } }
+                                </select>
+                                    <button type="button" class="btn btn-primary btn-xs"
+                                        onclick="$.post('@controllers.gsn.auth.routes.PermissionsController.addtovs(page)?vs_id=' + @v.id + '&id=' + $('#gr_@v.id').val(), function(data){document.location='@controllers.gsn.auth.routes.PermissionsController.vs(page)'});">@Messages("gsn.access.groups.add")</button>
+                                </li> }
+                            </ul>
+                        </td>
+                        <td>
+                            <ul class="list-unstyled hideable">
+                                @for(u <- v.userWrite) {
+                                <li>@u.user.firstName @u.user.lastName (@u.user.email)
+                                    <button type="button" class="btn btn-danger btn-xs"
+                                        onclick="$.post('@controllers.gsn.auth.routes.PermissionsController.removefromvs(page)?vs_id=' + @v.id + '&id=uw' + @u.user.id, function(data){document.location='@controllers.gsn.auth.routes.PermissionsController.vs(page)'});">@Messages("gsn.access.users.remove")</button>
+                                </li> } @if(v.userWrite.size < users.size){
+                                <li><select id="uw_@v.id"> @for(u <- users) {
+                                        @if(null == UserDataSourceWrite.findByBoth(u,v)){
+                                        <option value="uw@u.id">@u.firstName @u.lastName
+                                            (@u.email)</option> } }
+                                </select>
+                                    <button type="button" class="btn btn-primary btn-xs"
+                                        onclick="$.post('@controllers.gsn.auth.routes.PermissionsController.addtovs(page)?vs_id=' + @v.id + '&id=' + $('#uw_@v.id').val(), function(data){document.location='@controllers.gsn.auth.routes.PermissionsController.vs(page)'});">@Messages("gsn.access.groups.add")</button>
+                                </li> }
+                            </ul>
+                        </td>
+                        <td>
+                            <ul class="list-unstyled  hideable">
+                                @for(g <- v.groupWrite) {
+                                <li>[ @g.group.getName ]
+                                    <button type="button" class="btn btn-danger btn-xs"
+                                        onclick="$.post('@controllers.gsn.auth.routes.PermissionsController.removefromvs(page)?vs_id=' + @v.id + '&id=gw' + @g.group.id, function(data){document.location='@controllers.gsn.auth.routes.PermissionsController.vs(page)'});">@Messages("gsn.access.users.remove")</button>
+                                </li>
+                                <span class="text-muted">
+                                    <ul class="list-inline">
+                                        @for(u <- g.group.users){
+                                        <li>@u.firstName @u.lastName (@u.email)</li> }
+                                    </ul>
+                                </span>
+                                </li> } @if(v.groupWrite.size < groups.size){
+                                <li><select id="gw_@v.id"> @for(g <- groups) {
+                                        @if(null == GroupDataSourceWrite.findByBoth(g,v)){
+                                        <option value="gw@g.id">[ @g.name ]</option> } }
+                                </select>
+                                    <button type="button" class="btn btn-primary btn-xs"
+                                        onclick="$.post('@controllers.gsn.auth.routes.PermissionsController.addtovs(page)?vs_id=' + @v.id + '&id=' + $('#gw_@v.id').val(), function(data){document.location='@controllers.gsn.auth.routes.PermissionsController.vs(page)'});">@Messages("gsn.access.groups.add")</button>
+                                </li> }
+                            </ul>
+                        </td>
+                        <td>
+                        <input type="checkbox" @if(v.is_public) { checked="checked" } data-id="@v.id" onchange="check(this);"/>
+                        </td>
+                    </tr>
+                    }
+                </tbody>
+            </table>
+            @paginate(page, pageLength, count, controllers.gsn.auth.routes.PermissionsController.vs(_))
+        </div>
+    </div>
+
+<button type="button" class="btn btn-primary" id="addVirtualSensor">Add Virtual Sensor</button>
+
+
+<div id="addVirtualSensorModal" class="modal">
+    <div class="modal-dialog custom-modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Add Virtual Sensor</h4>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="virtualSensorForm">
+                    <div>
+                        <div>
+                            &lt;virtual-sensor name= <input type="text" id="vsName" name="vsName" required>
+                            priority=<input type="number" id="priority" name="priority" required> &gt;
+                        </div>
+                        <div>
+                            <div>
+                                &lt;processing-class&gt;
+                            </div>
+                            
+                            &lt;class-name&gt;<input type="text"id="className" name="className" required> &gt;/class-name&gt;
+                        </div>
+                        <div>
+                            <div>
+                                &lt;output-structure&gt;
+                            </div>
+                            <div>
+                                <div id="outputStructureFields">
+
+                                </div>
+                                <button type="button" class="btn btn-success" id="addOutputField">Add Output Field</button>
+                            </div>
+                            <div>
+                                &lt;/output-structure&gt;
+                            </div>
+                        </div>
+                        <div>
+                            &lt;/processing-class&gt;
+                        </div>
+                        <div>
+                            &lt;description&gt;
+                            <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
+                            &lt;/description&gt;
+                        </div>
+                        <div>
+                            <div>
+                                &lt;addressing&gt;
+                            </div>
+                            <div>
+                                <div id="addressingFields">
+
+                                </div>
+                                <button type="button" class="btn btn-success" id="addAddressing">Add Addressing Predicate</button>
+                            </div>
+                            <div>
+                                &lt;/addressing&gt;
+                            </div>                           
+                        </div>
+                        <div>
+                            <div>&lt;streams&gt;</div>
+                            <div>
+                                <div id="streamsFields">
+
+                                </div>
+                                <button type="button" class="btn btn-success" id="addStream">Add Stream</button>
+                            </div>
+                            <div>&lt;/streams&gt;</div>
+                        </div>
+                       
+                    </div>
+
+
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <script type="text/javascript">
+    function check(item){
+        var i = $(item);
+        if (i[0].checked){
+            $.post('@controllers.gsn.auth.routes.PermissionsController.addtovs(page)?vs_id=' + i.data('id') + '&id=a', function(data){$('#row_'+i.data('id')).toggleClass('success',true)})
+        }else{
+            $.post('@controllers.gsn.auth.routes.PermissionsController.removefromvs(page)?vs_id=' + i.data('id') + '&id=a', function(data){$('#row_'+i.data('id')).toggleClass('success',false)})
+        }
+    }
+    $('select').select2();
+
+
+
+
+
+
+
+    $('#addVirtualSensor').on('click', function () {
+        $('#addVirtualSensorModal').modal('show');
+    });
+
+
+    let outputFieldIndex = 0;
+
+        $('#addOutputField').on('click', function () {
+
+            $('#outputStructureFields').append('<div>&lt;field name=<input type="text" name="outputFieldName' + outputFieldIndex + '" required> type=<input type="text" name="outputFieldType' + outputFieldIndex + '" required>&gt;</div>');
+            outputFieldIndex++;
+        });
+
+
+    let addressingIndex = 0;
+    $('#addAddressing').on('click', function () {
+
+        $('#addressingFields').append('<div>&lt;predicate key=<input type="text" name="addressingKey' + addressingIndex + '" required>&gt;<input type="text" name="addressingValue' + addressingIndex + '" required>&lt;/predicate&gt;</div>');
+        addressingIndex++;
+    });
+    let streamIndex = 0;
+    $('#addStream').on('click', function () {
+        $('#streamsFields').append('<div>&lt;stream name=<input type="text" name="streamName' + streamIndex + '" required>&gt;</div><div><div id="sourceFields"></div><button type="button" class="btn btn-success" id="addSource">Add Source</button></div>&lt;query&gt;<input type="text" name="streamQuery' + streamIndex +'" required>&lt;/query&gt;<div>&lt;/stream&gt;</div>');
+        streamIndex++;
+    });
+
+
+    let sourceIndex=0;
+    let sourceAddressIndex=0;
+    let sourceAddressPredicateIndex=0;
+    $('#streamsFields').on('click', '#addSource', function () {
+    $('#sourceFields').append('<div>&lt;source alias=<input type="text" name="sourceAlias' + sourceIndex +'" required> sampling-rate=<input type="number" name="samplingRate' + sourceIndex +'" required>storage-size=<input type="number" name="storageSize' + sourceIndex +'" required>&gt;</div><div><div id="sourceAddressFields"></div><button type="button" class="btn btn-success" id="addSourceAddress">Add Address</button></div>&lt;query&gt;<input type="text" name="sourcestreamQuery'+sourceIndex+'" required></query><div>&lt;/source&gt;</div>');
+    sourceIndex++;
+
+    $('#sourceFields').on('click', '#addSourceAddress', function () {
+        $('#sourceAddressFields').append('<div>&lt;address wrapper=<input type="text" name="addressWrapper' +sourceAddressIndex+'" required>&gt;</div><div><div id="sourceAddressPredicates"></div><button type="button" class="btn btn-success" id="addSourceAddressPredicates">Add Predicate</button></div><div>&lt;/address&gt;</div>');
+        sourceAddressIndex++;
+    });
+    
+
+
+    $('#sourceAddressFields').on('click', '#addSourceAddressPredicates', function () {
+        $('#sourceAddressPredicates').append('<div>&lt;predicate key=<input type="text" name="sourceAddressPredicatekey' +sourceAddressPredicateIndex+'" required>&gt;</div><input type="text" name="sourceAddressPredicatevalue' +sourceAddressPredicateIndex+'" required><div>&lt;/predicate&gt;</div>');
+        sourceAddressPredicateIndex++;
+    });
+    
+});
+
+    $('#virtualSensorForm').submit(function (event) {
+        event.preventDefault();
+
+        var formData = $(this).serializeArray();
+        console.log(formData);
+        $.ajax({
+            type: 'POST',
+            url: '@controllers.gsn.auth.routes.PermissionsController.addVirtualSensor()',
+            data: formData,
+            success: function (data) {
+                $('#addVirtualSensorModal').modal('hide');
+            },
+            error: function (error) {
+                console.error(error);
+            }
+        });
+    });
+
+    $('#searchVs').on('input', function () {
+            var searchTerm = $(this).val().toLowerCase();
+
+            $('tbody tr').each(function () {
+                var vsName = $(this).find('td:first-child').text().toLowerCase();
+
+                if (vsName.includes(searchTerm)) {
+                    $(this).show();
+                } else {
+                    $(this).hide();
+                }
+            });
+        });
+    </script>
+    }
+    
+

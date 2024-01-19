@@ -1,0 +1,10 @@
+JAVA_OPTS="-Xmn256m -Xms256m -Xmx4G -XX:+UnlockExperimentalVMOptions -XX:+UseZGC -Dcom.sun.management.jmxremote.port=24090 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -XX:+PrintCommandLineFlags"
+# JAVA_OPTS="-XX:ThreadStackSize=4096 -Xmn256m -Xms256m -Xmx3G -XX:+UseG1GC -Dcom.sun.management.jmxremote.port=24090 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -XX:+PrintCommandLineFlags"
+export JAVA_OPTS
+
+CONFDIR="./conf"
+export CONFDIR
+
+VSDIR="./conf/virtual-sensors"
+export VSDIR
+

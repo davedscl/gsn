@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="ivy-report.xsl"?>
+<ivy-report version="1.0">
+	<info
+		organisation="ch.epfl.gsn"
+		module="gsn-core"
+		revision="2.0.3"
+		conf="docs"
+		confs="universal, universal-docs, universal-src, linux, compile, runtime, test, provided, optional, windows, docker, debian, rpm, compile-internal, runtime-internal, test-internal, plugin, sources, docs, pom, scala-tool, scoveragePlugin"
+		date="20240118074750"/>
+	<dependencies>
+	</dependencies>
+</ivy-report>

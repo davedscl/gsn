@@ -1,0 +1,11 @@
+clean
+reload
+compile
+project core
+git status
+clean
+reload
+compile
+project core
+sclean
+clean

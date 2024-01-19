@@ -1,0 +1,8 @@
+Django
+django-bower
+requests
+requests-cache
+jsonfield
+django-all-access
+gunicorn
+django-cors-headers

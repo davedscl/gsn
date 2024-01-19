@@ -1,0 +1,24 @@
+@import service.gsn.UserProvider
+@(userProvider: UserProvider, changeForm: Form[controllers.gsn.auth.Account.EditProfile])
+
+@import helper._
+@implicitFieldConstructor = @{ FieldConstructor(twitterBootstrapBasic.f) }
+
+@main(userProvider, Messages("playauthenticate.profile.edit")) {
+
+	<h1>@Messages("playauthenticate.profile.edit")</h1>
+	<p>
+	@form(controllers.gsn.auth.routes.Account.doEditProfile, 'class -> "form-vertical", 'role -> "form") {
+
+       @if(changeForm.hasGlobalErrors) {
+        <p class="alert alert-danger">
+          @changeForm.getGlobalError.get.message
+     	</p>
+       }
+
+	   @_profilePartial(changeForm)
+	@CSRF.formField
+    <button type="submit" class="btn btn-default">@Messages("playauthenticate.profile.edit.btn")</button>
+	}
+	</p>
+}

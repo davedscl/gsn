@@ -1,0 +1,40 @@
+<virtual-sensor name="SystemMonitorVS" priority="11">
+	<processing-class>
+		<class-name>ch.epfl.gsn.vsensor.BridgeVirtualSensorPermasense</class-name>
+		<output-structure>
+			<field name="HEAP" type="double"/>
+			<field name="MAX_HEAP" type="double" />
+			<field name="NON_HEAP" type="double" />
+			<field name="PENDING_FINALIZATION_COUNT" type="double"/>
+			<field name="SYSTEM_LOAD_AVERAGE" type = "double"/>
+			<field name="THREAD_COUNT" type = "double"/>
+			<field name="PEAK_THREAD_COUNT" type = "double"/>
+			<field name="UPTIME" type = "double"/>
+			<field name="BLOCKED_THREADS" type = "double"/>
+			<field name="NEW_THREADS" type = "double"/>
+			<field name="RUNNABLE_THREADS" type = "double"/>
+			<field name="WAITING_THREADS" type = "double"/>
+			<field name="TERMINATED_THREADS" type = "double"/>
+		</output-structure>
+
+	</processing-class>
+	<description>Not Specified, please edit the file</description>
+	<life-cycle pool-size="10" />
+	<addressing>
+		<predicate key="geographical">Geographical data</predicate>
+		<predicate key="LATITUDE">37.5419</predicate>
+		<predicate key="LONGITUDE">-122.1419</predicate>		
+	</addressing>
+	<storage history-size="10000" />
+	<streams>
+		<stream name="input1">
+			<source alias="source1" sampling-rate="1" storage-size="1">
+				<address wrapper="system-monitoring">
+					<predicate key="sampling-rate">1000</predicate>
+				</address>
+				<query>select HEAP,MAX_HEAP,NON_HEAP,PENDING_FINALIZATION_COUNT,SYSTEM_LOAD_AVERAGE,THREAD_COUNT,PEAK_THREAD_COUNT,UPTIME,BLOCKED_THREADS,NEW_THREADS,RUNNABLE_THREADS,WAITING_THREADS,TERMINATED_THREADS,TIMED from wrapper</query>
+			</source>
+			<query>select HEAP,MAX_HEAP,NON_HEAP,PENDING_FINALIZATION_COUNT,THREAD_COUNT,SYSTEM_LOAD_AVERAGE,PEAK_THREAD_COUNT,UPTIME,BLOCKED_THREADS,NEW_THREADS,RUNNABLE_THREADS,WAITING_THREADS,TERMINATED_THREADS,TIMED from source1</query>
+		</stream>
+	</streams>
+</virtual-sensor>

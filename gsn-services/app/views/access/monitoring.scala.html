@@ -1,0 +1,260 @@
+@import service.gsn.UserProvider
+@import helper._
+@import ch.epfl.gsn.data._
+@(jsonData1: play.api.libs.json.JsValue,jsonData: play.api.libs.json.JsValue,userProvider: UserProvider)
+@import play.api.libs.json._
+
+@main(userProvider,"Monitoring Charts") {
+    <html>
+  <head>
+    <title>Monitoring Charts</title>
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+  </head>
+  <body>
+    <h1>Monitoring Charts</h1>
+    <div id="systemUptime"></div>
+    @if(jsonData != null && !jsonData.toString().equals("{}")) {
+      <h2>System Monitoring</h2>
+      <div id="heapChart"></div>
+      <div id="nonHeapChart"></div>
+      <div id="pendingFinalizationCountChart"></div>
+      <div id="currentThreadCPUTimeChart"></div>
+      <div id="systemLoadAverageChart"></div>
+      <div id="threadCountChart"></div>
+      <div id="threadInfoChart"></div>
+      @if(jsonData1 != null && !jsonData1.toString().equals("{}")) {
+        <h2>Sensor Monitoring</h2>
+        <div id="totalCpuTimeChart"></div>
+        <div id="outputProducedChart"></div>
+        <div id="inputProducedChart"></div>
+        <div id="lastOutputTimeChart"></div>
+        <div id="lastInputTimeChart"></div>
+        <script>
+          var data1 = @Html(Json.stringify(jsonData1));
+          var fields = [
+          { name: 'total_cpu_time_counter', index: 2 },
+          { name: 'last_output_time', index: 3 },
+          { name: 'output_produced_counter', index: 4 },
+          { name: 'last_input_time', index: 5 },
+          { name: 'input_produced_counter', index: 6 },
+        ];
+      
+        var sensorsToExclude = ['sensormonitorvs', 'systemmonitorvs'];
+      
+        fields.forEach(field => {
+          var sensorNames = [...new Set(data1.properties.values.map(entry => entry[1]))];
+          sensorNames = sensorNames.filter(sensor => !sensorsToExclude.includes(sensor));
+      
+          var series = sensorNames.map(sensorName => {
+            var dataForSensor = data1.properties.values
+              .filter(entry => entry[1] === sensorName)
+              .reduce((acc, entry) => {
+                var roundedTimestamp = Math.floor(entry[0] / 1000);
+                var existingDataPoint = acc.find(point => point[0] === roundedTimestamp);
+                if (existingDataPoint) {
+                  existingDataPoint[field.index] = entry[field.index];
+                } else {
+                  acc.push([roundedTimestamp, entry[field.index]]);
+                }
+                return acc;
+              }, []);
+      
+            return {
+              name: sensorName,
+              data: dataForSensor,
+            };
+          });
+      
+          var containerId = field.name === 'total_cpu_time_counter' ? 'totalCpuTimeChart' :
+                            field.name === 'output_produced_counter' ? 'outputProducedChart' :
+                            field.name === 'input_produced_counter' ? 'inputProducedChart' :
+                            field.name === 'last_output_time' ? 'lastOutputTimeChart' :
+                            'lastInputTimeChart';
+      
+          Highcharts.chart(containerId, {
+            chart: {
+              type: 'line',
+            },
+            title: {
+              text: field.name,
+            },
+            xAxis: {
+              categories: series[0] ? series[0].data.map(entry => entry[0]) : [],
+              labels: {
+                formatter: function () {
+                  return Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', new Date(this.value * 1000));
+                },
+              },
+            },
+            yAxis: {
+              title: {
+                text: field.name,
+              },
+            },
+            tooltip: {
+              formatter: function () {
+                var formattedTime = Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', new Date(this.x * 1000));
+                return '<b>' + this.series.name + '</b><br>' +
+                  'Time: ' + formattedTime + '<br>' +
+                  field.name + ': ' + this.y;
+              },
+            },
+            series: series,
+          });
+        });
+          
+        </script>
+      } else {
+        <p>No data available for sensormonitoring.</p>
+      }
+      
+      <script>
+        var data = @Html(Json.stringify(jsonData));
+        console.log("Data: ", data);
+        
+        var timestamps = data.properties.values.map(function (item) {
+            return new Date(item[0]);
+        });
+
+
+        var heapValues = data.properties.values.map(function (item) {
+          return item[1];
+        });
+        var maxheapValues = data.properties.values.map(function (item) {
+          return item[2];
+        });
+
+        var nonHeapValues = data.properties.values.map(function (item) {
+          return item[3];
+        });
+
+        var pendingFinalizationCountValues = data.properties.values.map(function (item) {
+          return item[4];
+        });
+
+        var systemLoadAverageValues = data.properties.values.map(function (item) {
+          return item[5];
+        });
+        var threadCountValues = data.properties.values.map(function (item) {
+          return item[6];
+        });
+        var peakThreadCountValues = data.properties.values.map(function (item) {
+          return item[7];
+        });
+        var uptime = data.properties.values.map(function (item) {
+          return item[8];
+        });
+
+        var blocked_threadsValues = data.properties.values.map(function (item) {
+          return item[9];
+        });
+        var new_threadsValues = data.properties.values.map(function (item) {
+          return item[10];
+        });
+        var runnable_threadsValues = data.properties.values.map(function (item) {
+          return item[11];
+        });
+        var waiting_threadsValues = data.properties.values.map(function (item) {
+          return item[12];
+        });
+        var terminated_threadsValues = data.properties.values.map(function (item) {
+          return item[13];
+        });
+
+        function convertMillisecondsToTime(ms) {
+        var days = Math.floor(ms / (24 * 60 * 60 * 1000));
+        var hours = Math.floor((ms % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+        var minutes = Math.floor((ms % (60 * 60 * 1000)) / (60 * 1000));
+        var seconds = Math.floor((ms % (60 * 1000)) / 1000);
+
+        var result = pad(days) + "days " + pad(hours) + ":" + pad(minutes) + ":" + pad(seconds);
+
+        return result;
+      }
+
+      function pad(num) {
+        return num.toString().padStart(2, '0');
+      }
+
+      if(uptime.length>0){
+        var uptimeInMilliseconds = uptime[uptime.length-1]; 
+        var formattedUptime = convertMillisecondsToTime(uptimeInMilliseconds);
+        document.getElementById("systemUptime").innerHTML = "System Uptime: " + formattedUptime;
+      } else {
+        console.error("no uptime")
+      }
+
+
+
+
+
+        var heapSeriesData = [{ name: "Heap Values", values: heapValues },
+                              { name: "MAX Heap Values", values: maxheapValues }
+                            ];
+        var nonHeapSeriesData = [{ name: "Non-Heap Values", values: nonHeapValues }];
+        var pendingFinalizationCountSeriesData= [{ name: "Pending Finalization Count Values", values: pendingFinalizationCountValues }];
+        var threadCountSeriesData= [
+                                    { name: "Thread Count", values: threadCountValues },
+                                    { name: "Peak Thread Count", values: peakThreadCountValues },
+                                  ];
+        var systemLoadAverageSeriesData= [{ name: "System Load Average", values: systemLoadAverageValues }];
+
+        var threadInfoSeriesData=[{name: "Blocked Threads Counter ", values: blocked_threadsValues },
+                                  {name: "New Threads Counter ", values: new_threadsValues },
+                                  {name: "Runnable Threads Counter ", values: runnable_threadsValues },
+                                  {name: "Waiting Threads Counter ", values: waiting_threadsValues },
+                                  {name: "Terminated Threads Counter ", values: terminated_threadsValues },
+                                  ];
+
+        createChart("heapChart", "Heap Chart", "Timestamp", "Heap Value", timestamps, heapSeriesData);
+        createChart("nonHeapChart", "Non-Heap Chart", "Timestamp", "Non-Heap Value", timestamps, nonHeapSeriesData);
+        createChart("pendingFinalizationCountChart", "Pending Finalization Count Chart", "Timestamp", "Pending Finalization Count Value", timestamps, pendingFinalizationCountSeriesData);
+        createChart("systemLoadAverageChart", "System Load Average Chart", "Timestamp", "Load Average", timestamps, systemLoadAverageSeriesData);
+        createChart("threadCountChart", "Thread count Chart", "Timestamp", "Threads", timestamps, threadCountSeriesData);
+        createChart("threadInfoChart", "Thread Info Chart", "Timestamp", "Threads", timestamps, threadInfoSeriesData);
+        function createChart(containerId, title, xAxisTitle, yAxisTitle, timestamps, seriesData) {
+          var series = seriesData.map(function (seriesItem) {
+              return {
+                  name: seriesItem.name,
+                  data: seriesItem.values,
+                  };
+          });
+
+          Highcharts.chart(containerId, {
+            chart: {
+              type: 'line',
+              zoomType: 'x'
+            },
+            title: {
+              text: title
+            },
+            xAxis: {
+              title: {
+                text: xAxisTitle
+              },
+              labels: {
+                formatter: function () {
+                    return Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', this.value);
+                }   
+               },
+                categories: timestamps,
+            },
+            tooltip: {
+              crosshairs: true,
+              shared: true
+            },
+            yAxis: {
+              title: {
+                text: yAxisTitle
+              }
+            },
+            series: series,
+          });
+        }
+      </script>
+    } else {
+      <p>No data available for charts.</p>
+    }
+  </body>
+  </html>
+}

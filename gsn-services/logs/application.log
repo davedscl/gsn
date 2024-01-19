@@ -1,0 +1,24 @@
+2024-01-17 07:56:46,320 [WARN] from application in play-dev-mode-akka.actor.default-dispatcher-2 - Logger configuration in conf files is deprecated and has no effect. Use a logback configuration file instead.
+2024-01-17 07:56:47,265 [INFO] from application in play-dev-mode-akka.actor.default-dispatcher-2 - Creating Pool for datasource 'default'
+2024-01-17 07:56:47,414 [INFO] from play.api.db.DefaultDBApi in play-dev-mode-akka.actor.default-dispatcher-2 - Database [default] connected at jdbc:h2:file:/tmp/GsnAuthDb
+2024-01-17 07:56:48,213 [INFO] from application in play-dev-mode-akka.actor.default-dispatcher-2 - Application has started
+2024-01-17 07:56:48,374 [WARN] from com.mchange.v2.c3p0.cfg.C3P0Config in play-dev-mode-akka.actor.default-dispatcher-2 - named-config with name 'gsn' does not exist. Using default-config.
+2024-01-17 07:56:48,652 [ERROR] from ch.epfl.gsn.data.SensorDatabase$ in application-akka.actor.default-dispatcher-6 - Error Table "MULTIFORMATTEMPERATUREHANDLER" not found; SQL statement:
+select max(timed), min(timed) from multiformattemperaturehandler  [42102-195]
+2024-01-17 07:56:48,656 [ERROR] from ch.epfl.gsn.data.SensorDatabase$ in application-akka.actor.default-dispatcher-6 - Error Table "SYSTEMMONITORVS" not found; SQL statement:
+select max(timed), min(timed) from systemmonitorvs  [42102-195]
+2024-01-17 07:56:48,665 [ERROR] from ch.epfl.gsn.data.SensorDatabase$ in application-akka.actor.default-dispatcher-6 - Error Table "MULTIFORMATTEMPERATUREHANDLERZEROMQ" not found; SQL statement:
+select max(timed), min(timed) from multiformattemperaturehandlerzeromq  [42102-195]
+2024-01-17 07:56:48,677 [ERROR] from ch.epfl.gsn.data.SensorDatabase$ in application-akka.actor.default-dispatcher-6 - Error Table "SENSORMONITORVS" not found; SQL statement:
+select max(timed), min(timed) from sensormonitorvs  [42102-195]
+2024-01-17 07:56:48,689 [ERROR] from ch.epfl.gsn.data.SensorDatabase$ in application-akka.actor.default-dispatcher-7 - Error Table "MULTIFORMATTEMPERATUREHANDLER1" not found; SQL statement:
+select max(timed), min(timed) from multiformattemperaturehandler1  [42102-195]
+2024-01-17 07:56:49,033 [DEBUG] from application in play-dev-mode-akka.actor.default-dispatcher-2 - Registered AuthProvider 'password'
+2024-01-17 07:56:49,167 [DEBUG] from application in play-dev-mode-akka.actor.default-dispatcher-2 - Registered AuthProvider 'openid'
+2024-01-17 07:56:49,238 [INFO] from play.api.http.EnabledFilters in play-dev-mode-akka.actor.default-dispatcher-2 - Enabled Filters (see <https://www.playframework.com/documentation/latest/Filters>):
+
+    play.filters.csrf.CSRFFilter
+    play.filters.headers.SecurityHeadersFilter
+    play.filters.hosts.AllowedHostsFilter
+
+2024-01-17 07:56:49,241 [INFO] from play.api.Play in play-dev-mode-akka.actor.default-dispatcher-2 - Application started (Dev)

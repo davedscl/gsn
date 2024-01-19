@@ -1,0 +1,5 @@
+[0m[[0mdebug[0m] [0mCopy resource mappings: [0m
+[0m[[0mdebug[0m] [0m	(/home/vagrant/gsn/gsn-core/src/main/resources/wrappers.properties,/home/vagrant/gsn/gsn-core/target/classes/wrappers.properties)[0m
+[0m[[0mdebug[0m] [0m	(/home/vagrant/gsn/gsn-core/src/main/resources/reference.conf,/home/vagrant/gsn/gsn-core/target/classes/reference.conf)[0m
+[0m[[0mdebug[0m] [0m	(/home/vagrant/gsn/gsn-core/src/main/resources/spatial.properties,/home/vagrant/gsn/gsn-core/target/classes/spatial.properties)[0m
+[0m[[0mdebug[0m] [0m	(/home/vagrant/gsn/gsn-core/src/main/resources/log4j2.xml,/home/vagrant/gsn/gsn-core/target/classes/log4j2.xml)[0m
