@@ -42,9 +42,6 @@ import org.slf4j.LoggerFactory;
 import ch.epfl.gsn.Main;
 import ch.epfl.gsn.beans.DataTypes;
 import ch.epfl.gsn.beans.StreamElement;
-import ch.epfl.gsn.storage.DataEnumerator;
-import ch.epfl.gsn.storage.DataEnumeratorIF;
-import ch.epfl.gsn.storage.StorageManager;
 
 import org.slf4j.Logger;
 
@@ -61,25 +58,25 @@ import org.slf4j.Logger;
  */
 public class DataEnumerator implements DataEnumeratorIF {
 
-	private transient Logger logger                   = LoggerFactory.getLogger( DataEnumerator.class );
+	private transient Logger logger = LoggerFactory.getLogger(DataEnumerator.class);
 
-	private ResultSet        resultSet                = null;
+	private ResultSet resultSet = null;
 
-	private String [ ]       dataFieldNames;
+	private String[] dataFieldNames;
 
-	private Byte [ ]      dataFieldTypes;
+	private Byte[] dataFieldTypes;
 
-	private boolean          hasNext                  = false;
+	private boolean hasNext = false;
 
-	boolean                  hasTimedFieldInResultSet = false;
+	boolean hasTimedFieldInResultSet = false;
 
-	int                      indexOfTimedField        = -1;
+	int indexOfTimedField = -1;
 
-	int                      indexofPK                = -1;
+	int indexofPK = -1;
 
-	boolean                  linkBinaryData           = false;
+	boolean linkBinaryData = false;
 
-    private StorageManager   storageManager           = null;
+	private StorageManager storageManager = null;
 
 	private boolean manualCloseConnection;
 	private boolean hadError = false;
@@ -87,7 +84,7 @@ public class DataEnumerator implements DataEnumeratorIF {
 	/**
 	 * Creats an empty data enumerator.
 	 */
-	public DataEnumerator ( ) {
+	public DataEnumerator() {
 		hasNext = false;
 	}
 
@@ -95,85 +92,113 @@ public class DataEnumerator implements DataEnumeratorIF {
 		return resultSet == null;
 	}
 
-	public DataEnumerator (StorageManager storageManager, PreparedStatement preparedStatement , boolean binaryLinked ) {
-		this(storageManager, preparedStatement,binaryLinked,false);
+	public DataEnumerator(StorageManager storageManager, PreparedStatement preparedStatement, boolean binaryLinked) {
+		this(storageManager, preparedStatement, binaryLinked, false);
 	}
-	
-	public DataEnumerator ( StorageManager storageManager, PreparedStatement preparedStatement , boolean binaryLinked ,boolean manualClose) {
+
+	/**
+	 * Constructs a DataEnumerator object for iterating over query results from the
+	 * specified PreparedStatement.
+	 *
+	 * This constructor initializes a DataEnumerator object for iterating over the
+	 * results of the provided
+	 * PreparedStatement. It associates the DataEnumerator with the given
+	 * StorageManager and sets the manualCloseConnection
+	 * flag accordingly.
+	 * 
+	 * @param storageManager    The StorageManager instance associated with the
+	 *                          DataEnumerator.
+	 * @param preparedStatement The PreparedStatement containing the query results
+	 *                          to iterate over.
+	 * @param binaryLinked      A boolean indicating whether binary data is linked.
+	 * @param manualClose       A boolean indicating whether the connection should
+	 *                          be manually closed.
+	 */
+	public DataEnumerator(StorageManager storageManager, PreparedStatement preparedStatement, boolean binaryLinked,
+			boolean manualClose) {
 		this.storageManager = storageManager;
-        this.manualCloseConnection=manualClose;
-		if ( preparedStatement == null ) {
-			logger.debug( new StringBuilder( ).append( "resultSetToStreamElements" ).append( " is supplied with null input." ).toString( ) );
+		this.manualCloseConnection = manualClose;
+		if (preparedStatement == null) {
+			if(logger.isDebugEnabled()){
+				logger.debug(new StringBuilder().append("resultSetToStreamElements").append(" is supplied with null input.")
+					.toString());
+			}
 			hasNext = false;
 			return;
 		}
-		
-//		try {
-//			preparedStatement.setFetchSize(50);
-//		} catch (SQLException e1) {
-//			logger.warn(e1.getMessage(),e1);
-//			return;
-//		}
+
+		// try {
+		// preparedStatement.setFetchSize(50);
+		// } catch (SQLException e1) {
+		// logger.warn(e1.getMessage(),e1);
+		// return;
+		// }
 
 		this.linkBinaryData = binaryLinked;
-		Vector < String > fieldNames = new Vector < String >( );
-		Vector < Byte > fieldTypes = new Vector < Byte >( );
+		Vector<String> fieldNames = new Vector<String>();
+		Vector<Byte> fieldTypes = new Vector<Byte>();
 		try {
-			this.resultSet = preparedStatement.executeQuery( );
-			hasNext = resultSet.next( );
+			this.resultSet = preparedStatement.executeQuery();
+			hasNext = resultSet.next();
 			// Initializing the fieldNames and fieldTypes.
 			// Also setting the values for <code> hasTimedFieldInResultSet</code>
 			// if the timed field is present in the result set.
 			String tableName = null;
-            int problematicColumn = -1;
-            for ( int i = 1 ; i <= resultSet.getMetaData( ).getColumnCount( ) ; i++ ) {
-				if (i == 1){
+			int problematicColumn = -1;
+			for (int i = 1; i <= resultSet.getMetaData().getColumnCount(); i++) {
+				if (i == 1) {
 					tableName = resultSet.getMetaData().getTableName(1);
 				}
-                    
-                String colName = resultSet.getMetaData( ).getColumnLabel( i );
-				int colTypeInJDBCFormat = resultSet.getMetaData( ).getColumnType( i );
-				int colScale=resultSet.getMetaData().getScale(i);
-				if ( colName.equalsIgnoreCase( "PK" ) ) {
+
+				String colName = resultSet.getMetaData().getColumnLabel(i);
+				int colTypeInJDBCFormat = resultSet.getMetaData().getColumnType(i);
+				int colScale = resultSet.getMetaData().getScale(i);
+				if (colName.equalsIgnoreCase("PK")) {
 					indexofPK = i;
-				} else if ( colName.equalsIgnoreCase( "timed" ) ) {
+				} else if (colName.equalsIgnoreCase("timed")) {
 					indexOfTimedField = i;
 				} else {
-					fieldNames.add( colName );
-                    byte gsnType = storageManager.convertLocalTypeToGSN(colTypeInJDBCFormat,colScale );
-                    if (gsnType == -100){
-                        logger.error("The type can't be converted to GSN form - error description: ");
-                        logger.warn("Table name: " + tableName);
-                        logger.warn("Column name: " +colName);
-                        logger.warn("Column type name: " +resultSet.getMetaData().getColumnTypeName(i));
-                        logger.warn("Query result: " +preparedStatement.toString());
-                        problematicColumn = i;
-                    }
-					fieldTypes.add( gsnType );
+					fieldNames.add(colName);
+					byte gsnType = storageManager.convertLocalTypeToGSN(colTypeInJDBCFormat, colScale);
+					if (gsnType == -100) {
+						logger.error("The type can't be converted to GSN form - error description: ");
+						logger.warn("Table name: " + tableName);
+						logger.warn("Column name: " + colName);
+						logger.warn("Column type name: " + resultSet.getMetaData().getColumnTypeName(i));
+						logger.warn("Query result: " + preparedStatement.toString());
+						problematicColumn = i;
+					}
+					fieldTypes.add(gsnType);
 				}
 			}
-            if (problematicColumn != -1){
-                while(true){
-                    logger.warn("Values of the column: " + resultSet.getObject(problematicColumn));
-                    if (resultSet.isLast()) {break;}
-                    resultSet.next();
-                }
-            }
-			dataFieldNames = fieldNames.toArray( new String [ ] {} );
-			dataFieldTypes = fieldTypes.toArray( new Byte [ ] {} );
-			if ( indexofPK == -1 && linkBinaryData ) {throw new RuntimeException( "The specified query can't be used with binaryLinked paramter set to true." );}
-		} catch ( Exception e ) {
-			logger.error("Trying to create DataEnumerator with:\n"+preparedStatement.toString());
-            logger.error( e.getMessage( ) , e );
+			if (problematicColumn != -1) {
+				while (true) {
+					logger.warn("Values of the column: " + resultSet.getObject(problematicColumn));
+					if (resultSet.isLast()) {
+						break;
+					}
+					resultSet.next();
+				}
+			}
+			dataFieldNames = fieldNames.toArray(new String[] {});
+			dataFieldTypes = fieldTypes.toArray(new Byte[] {});
+			if (indexofPK == -1 && linkBinaryData) {
+				throw new RuntimeException("The specified query can't be used with binaryLinked paramter set to true.");
+			}
+		} catch (Exception e) {
+			logger.error("Trying to create DataEnumerator with:\n" + preparedStatement.toString());
+			logger.error(e.getMessage(), e);
 			hasNext = false;
-		}finally {
-			if (hasNext==false) {close();}
+		} finally {
+			if (hasNext == false) {
+				close();
+			}
 		}
 	}
 
 	private StreamElement streamElement = null;
 
-	public boolean hasMoreElements ( ) {
+	public boolean hasMoreElements() {
 		return hasNext;
 	}
 
@@ -181,98 +206,116 @@ public class DataEnumerator implements DataEnumeratorIF {
 	 * Returns the next stream element or > IndexOutOfBoundsException("The
 	 * resultset doesn't have anymore elements or closed.")<
 	 */
-	public StreamElement nextElement ( ) throws RuntimeException {
-		if ( hasNext == false ) {throw new IndexOutOfBoundsException( "The resultset doesn't have anymore elements or closed." );}
+	public StreamElement nextElement() throws RuntimeException {
+		if (hasNext == false) {
+			throw new IndexOutOfBoundsException("The resultset doesn't have anymore elements or closed.");
+		}
 		long timestamp = -1;
 		long pkValue = -1;
 		try {
-			if ( indexofPK != -1 ) {pkValue = resultSet.getLong( indexofPK );}
-			Serializable [ ] output = new Serializable [ dataFieldNames.length ];
-			for ( int actualColIndex = 1 , innerIndex = 0 ; actualColIndex <= resultSet.getMetaData( ).getColumnCount( ) ; actualColIndex++ ) {
-				if ( actualColIndex == indexOfTimedField ) {
-					timestamp = resultSet.getLong( actualColIndex );
+			if (indexofPK != -1) {
+				pkValue = resultSet.getLong(indexofPK);
+			}
+			Serializable[] output = new Serializable[dataFieldNames.length];
+			for (int actualColIndex = 1,
+					innerIndex = 0; actualColIndex <= resultSet.getMetaData().getColumnCount(); actualColIndex++) {
+				if (actualColIndex == indexOfTimedField) {
+					timestamp = resultSet.getLong(actualColIndex);
 					continue;
-				} else if ( actualColIndex == indexofPK ){
+				} else if (actualColIndex == indexofPK) {
 					continue;
 				} else {
-					switch ( dataFieldTypes[ innerIndex ] ) {
-					case DataTypes.VARCHAR :
-					case DataTypes.CHAR :
-						output[ innerIndex ] = resultSet.getString( actualColIndex );
-						break;
-					case DataTypes.INTEGER :
-						output[ innerIndex ] = resultSet.getInt( actualColIndex );
-						break;
-					case DataTypes.TINYINT :
-						output[ innerIndex ] = resultSet.getByte( actualColIndex );
-						break;
-					case DataTypes.SMALLINT :
-						output[ innerIndex ] = resultSet.getShort( actualColIndex );
-						break;
-					case DataTypes.DOUBLE :
-						output[ innerIndex ] = resultSet.getDouble( actualColIndex );
-						break;
-					case DataTypes.FLOAT :
-						output[ innerIndex ] = resultSet.getFloat( actualColIndex );
-						break;
-					case DataTypes.BIGINT :
-						output[ innerIndex ] = resultSet.getLong( actualColIndex );
-						break;
-					case DataTypes.BINARY :
-						if ( linkBinaryData ) {
-							output[ innerIndex ] = "field?vs=" + resultSet.getMetaData( ).getTableName( actualColIndex ) + "&amp;field=" + resultSet.getMetaData( ).getColumnLabel( actualColIndex ) + "&amp;pk=" + pkValue;
-                            resultSet.getBytes( actualColIndex );
-                        }else{
-							output[ innerIndex ] = resultSet.getBytes( actualColIndex );
-						}
-						break;
+					switch (dataFieldTypes[innerIndex]) {
+						case DataTypes.VARCHAR:
+						case DataTypes.CHAR:
+							output[innerIndex] = resultSet.getString(actualColIndex);
+							break;
+						case DataTypes.INTEGER:
+							output[innerIndex] = resultSet.getInt(actualColIndex);
+							break;
+						case DataTypes.TINYINT:
+							output[innerIndex] = resultSet.getByte(actualColIndex);
+							break;
+						case DataTypes.SMALLINT:
+							output[innerIndex] = resultSet.getShort(actualColIndex);
+							break;
+						case DataTypes.DOUBLE:
+							output[innerIndex] = resultSet.getDouble(actualColIndex);
+							break;
+						case DataTypes.FLOAT:
+							output[innerIndex] = resultSet.getFloat(actualColIndex);
+							break;
+						case DataTypes.BIGINT:
+							output[innerIndex] = resultSet.getLong(actualColIndex);
+							break;
+						case DataTypes.BINARY:
+							if (linkBinaryData) {
+								output[innerIndex] = "field?vs=" + resultSet.getMetaData().getTableName(actualColIndex)
+										+ "&amp;field=" + resultSet.getMetaData().getColumnLabel(actualColIndex)
+										+ "&amp;pk=" + pkValue;
+								resultSet.getBytes(actualColIndex);
+							} else {
+								output[innerIndex] = resultSet.getBytes(actualColIndex);
+							}
+							break;
 					}
-					if (resultSet.wasNull()){
-						output[innerIndex]=null;
+					if (resultSet.wasNull()) {
+						output[innerIndex] = null;
 					}
-						
+
 					innerIndex++;
 				}
 			}
-			streamElement = new StreamElement( dataFieldNames , dataFieldTypes , output , indexOfTimedField == -1 ? System.currentTimeMillis( ) : timestamp );
-			if ( indexofPK != -1 ){ streamElement.setInternalPrimayKey( pkValue );}
-			hasNext = resultSet.next( );
-			if ( hasNext == false ){
-				close( );
+			streamElement = new StreamElement(dataFieldNames, dataFieldTypes, output,
+					indexOfTimedField == -1 ? System.currentTimeMillis() : timestamp);
+			if (indexofPK != -1) {
+				streamElement.setInternalPrimayKey(pkValue);
+			}
+			hasNext = resultSet.next();
+			if (hasNext == false) {
+				close();
 			}
 
-		} catch ( SQLException e ) {
-			logger.error( e.getMessage( ) , e );
+		} catch (SQLException e) {
+			logger.error(e.getMessage(), e);
 			close();
 		}
-		return streamElement; //BUG -> if a SQLException occurs, the last stream element will be returned.
+		return streamElement; // BUG -> if a SQLException occurs, the last stream element will be returned.
 	}
 
-	public void close ( ) {
+	/**
+	 * Closes the DataEnumerator and releases any associated resources.
+	 * If a ResultSet is present, it closes the ResultSet, Statement, and
+	 * Connection.
+	 * If manualCloseConnection is set to true, only the ResultSet is closed.
+	 */
+	public void close() {
 		this.hasNext = false;
-		if(resultSet == null){
+		if (resultSet == null) {
 			return;
 		}
 
 		try {
 			if (!manualCloseConnection && resultSet.getStatement() != null) {
-                java.sql.Statement s = resultSet.getStatement();
-                java.sql.Connection c = s.getConnection();
-                String tableName = resultSet.getMetaData().getTableName(1);
-                storageManager.close(resultSet);
-                storageManager.closeStatement(s);
-                storageManager.close(c);
-                resultSet = null;
-            }else {
+				java.sql.Statement s = resultSet.getStatement();
+				java.sql.Connection c = s.getConnection();
+				String tableName = resultSet.getMetaData().getTableName(1);
+				storageManager.close(resultSet);
+				storageManager.closeStatement(s);
+				storageManager.close(c);
+				resultSet = null;
+			} else {
 				try {
 					resultSet.close();
-				}catch (SQLException e) {
-					logger.debug(e.getMessage(),e);
+				} catch (SQLException e) {
+					if(logger.isDebugEnabled()){
+						logger.debug(e.getMessage(), e);
+					}
 				}
 			}
 
 		} catch (SQLException e) {
-			logger.error(e.getMessage(),e);
+			logger.error(e.getMessage(), e);
 		}
 	}
 

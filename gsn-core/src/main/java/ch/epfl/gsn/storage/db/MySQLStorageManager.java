@@ -53,6 +53,18 @@ public class MySQLStorageManager extends StorageManager {
         return "jdbc:mysql:";
     }
 
+    /**
+     * Generates a StringBuilder containing a SQL statement to remove useless data
+     * from a table based on a count threshold.
+     * The statement is constructed using the provided virtual sensor name and
+     * storage size.
+     *
+     * @param virtualSensorName The name of the virtual sensor table.
+     * @param storageSize       The count-based storage size threshold for retaining
+     *                          data in the table.
+     * @return A StringBuilder containing the SQL statement to remove useless data
+     *         based on the count from the specified table.
+     */
     @Override
     public String convertGSNTypeToLocalType(DataField gsnType) {
         String convertedType;
@@ -61,11 +73,11 @@ public class MySQLStorageManager extends StorageManager {
             case DataTypes.VARCHAR:
                 // Because the parameter for the varchar is not
                 // optional.
-                if (gsnType.getType().trim().equalsIgnoreCase("string")){
+                if (gsnType.getType().trim().equalsIgnoreCase("string")) {
                     convertedType = "TEXT";
-                }else{
+                } else {
                     convertedType = gsnType.getType();
-                }   
+                }
                 break;
             case DataTypes.BINARY:
                 convertedType = "LONGBLOB";
@@ -74,7 +86,7 @@ public class MySQLStorageManager extends StorageManager {
                 convertedType = "double precision";
                 break;
             case DataTypes.FLOAT:
-            	convertedType = "FLOAT(23)"; //just to be sure it doesn't map to double
+                convertedType = "FLOAT(23)"; // just to be sure it doesn't map to double
                 break;
             default:
                 convertedType = DataTypes.TYPE_NAMES[gsnType.getDataTypeID()];
@@ -83,6 +95,18 @@ public class MySQLStorageManager extends StorageManager {
         return convertedType;
     }
 
+    /**
+     * Generates a StringBuilder containing a SQL statement to remove useless data
+     * from a table based on a count threshold.
+     * The statement is constructed using the provided virtual sensor name and
+     * storage size.
+     *
+     * @param virtualSensorName The name of the virtual sensor table.
+     * @param storageSize       The count-based storage size threshold for retaining
+     *                          data in the table.
+     * @return A StringBuilder containing the SQL statement to remove useless data
+     *         based on the count from the specified table.
+     */
     @Override
     public byte convertLocalTypeToGSN(int jdbcType, int precision) {
         switch (jdbcType) {
@@ -95,15 +119,15 @@ public class MySQLStorageManager extends StorageManager {
             case Types.TINYINT:
                 return DataTypes.TINYINT;
             case Types.VARCHAR:
-            case Types.LONGVARCHAR: // This is needed because of the string type in CSV wrapper. 	
+            case Types.LONGVARCHAR: // This is needed because of the string type in CSV wrapper.
                 return DataTypes.VARCHAR;
             case Types.CHAR:
                 return DataTypes.CHAR;
-            case Types.FLOAT:      
-            case Types.REAL:      
-            	return DataTypes.FLOAT;
-            case Types.DOUBLE:	
-            case Types.DECIMAL:    // This is needed for doing aggregates in datadownload servlet.
+            case Types.FLOAT:
+            case Types.REAL:
+                return DataTypes.FLOAT;
+            case Types.DOUBLE:
+            case Types.DECIMAL: // This is needed for doing aggregates in datadownload servlet.
                 return DataTypes.DOUBLE;
             case Types.BINARY:
             case Types.BLOB:
@@ -111,10 +135,10 @@ public class MySQLStorageManager extends StorageManager {
             case Types.LONGVARBINARY:
                 return DataTypes.BINARY;
             default:
-                if (jdbcType == Types.NULL){
-                    logger.error("The type can't be converted to GSN form : 0. (Found  type in JDBC format is \"Null\")");
-                }
-                else {
+                if (jdbcType == Types.NULL) {
+                    logger.error(
+                            "The type can't be converted to GSN form : 0. (Found  type in JDBC format is \"Null\")");
+                } else {
                     logger.error("The type can't be converted to GSN form : " + jdbcType);
                 }
                 break;
@@ -124,10 +148,15 @@ public class MySQLStorageManager extends StorageManager {
 
     @Override
     public String getStatementDropIndex() {
-        //if (AbstractStorageManager.isMysqlDB()) return "DROP INDEX #NAME IF EXISTS";
+        // if (AbstractStorageManager.isMysqlDB()) return "DROP INDEX #NAME IF EXISTS";
         return "DROP TABLE IF EXISTS #NAME";
     }
 
+    /**
+     * Returns the SQL statement for dropping a view.
+     *
+     * @return the SQL statement for dropping a view
+     */
     @Override
     public String getStatementDropView() {
         return "DROP VIEW IF EXISTS #NAME";
@@ -138,11 +167,25 @@ public class MySQLStorageManager extends StorageManager {
         return 1146;
     }
 
+    /**
+     * Adds a LIMIT and OFFSET clause to the given SQL query.
+     *
+     * @param query  the SQL query to modify
+     * @param limit  the maximum number of rows to return
+     * @param offset the number of rows to skip before starting to return rows
+     * @return the modified SQL query with the LIMIT and OFFSET clauses added
+     */
     @Override
     public String addLimit(String query, int limit, int offset) {
         return query + " LIMIT " + limit + " OFFSET " + offset;
     }
 
+    /**
+     * Initializes the database access for MySQLStorageManager.
+     * 
+     * @param con the database connection
+     * @throws Exception if an error occurs during initialization
+     */
     @Override
     public void initDatabaseAccess(Connection con) throws Exception {
         Statement stmt = con.createStatement();
@@ -153,11 +196,25 @@ public class MySQLStorageManager extends StorageManager {
         super.initDatabaseAccess(con);
     }
 
+    /**
+     * Returns the statement difference time in milliseconds.
+     *
+     * @return the statement difference time in milliseconds
+     */
     @Override
     public String getStatementDifferenceTimeInMillis() {
         return "select  UNIX_TIMESTAMP()*1000";
     }
 
+    /**
+     * Generates a SQL statement for dropping a table if it exists.
+     *
+     * @param tableName The name of the table to be dropped.
+     * @param conn      The database connection used for generating the statement.
+     * @return A StringBuilder containing the SQL statement for dropping the
+     *         specified table if it exists.
+     * @throws SQLException If a database access error occurs.
+     */
     @Override
     public StringBuilder getStatementDropTable(CharSequence tableName, Connection conn) throws SQLException {
         StringBuilder sb = new StringBuilder("Drop table if exists ");
@@ -165,22 +222,47 @@ public class MySQLStorageManager extends StorageManager {
         return sb;
     }
 
+    /**
+     * Generates a SQL statement for creating a table with the specified name and
+     * structure.
+     *
+     * @param tableName The name of the table to be created.
+     * @param structure The array of DataField objects representing the structure of
+     *                  the table.
+     * @return A StringBuilder containing the SQL statement for creating the
+     *         specified table.
+     */
     @Override
     public StringBuilder getStatementCreateTable(String tableName, DataField[] structure) {
         StringBuilder result = new StringBuilder("CREATE TABLE ").append(tableName);
         result.append(" (PK BIGINT PRIMARY KEY NOT NULL AUTO_INCREMENT, timed BIGINT NOT NULL, ");
         for (DataField field : structure) {
-            if (field.getName().equalsIgnoreCase("pk") || field.getName().equalsIgnoreCase("timed")){ continue;}
+            if (field.getName().equalsIgnoreCase("pk") || field.getName().equalsIgnoreCase("timed")) {
+                continue;
+            }
             result.append(field.getName().toUpperCase()).append(' ');
             result.append(convertGSNTypeToLocalType(field));
             result.append(" ,");
         }
         result.delete(result.length() - 2, result.length());
         result.append(")");
-        if (tableName.contains("_")) {logger.warn(result.toString());}
+        if (tableName.contains("_")) {
+            logger.warn(result.toString());
+        }
         return result;
     }
 
+    /**
+     * Generates a SQL statement for removing useless data from a virtual sensor
+     * table based on the specified storage size.
+     *
+     * @param virtualSensorName The name of the virtual sensor table from which to
+     *                          remove data.
+     * @param storageSize       The storage size used to determine the number of
+     *                          records to keep.
+     * @return A StringBuilder containing the SQL statement for removing useless
+     *         data from the virtual sensor table.
+     */
     @Override
     public StringBuilder getStatementUselessDataRemoval(String virtualSensorName, long storageSize) {
         return new StringBuilder()
@@ -216,8 +298,17 @@ public class MySQLStorageManager extends StorageManager {
                 .append(storageSize).append("  ) AS TMP)");
     }
 
-    //
-
+    /**
+     * Generates a SQL statement for removing useless data from a virtual sensor
+     * table based on the specified storage size and count.
+     *
+     * @param virtualSensorName The name of the virtual sensor table from which to
+     *                          remove data.
+     * @param storageSize       The storage size used to determine the number of
+     *                          records to keep.
+     * @return A StringBuilder containing the SQL statement for removing useless
+     *         data from the virtual sensor table.
+     */
     @Override
     public ArrayList<String> getInternalTables() throws SQLException {
         ArrayList<String> toReturn = new ArrayList<String>();
@@ -225,23 +316,37 @@ public class MySQLStorageManager extends StorageManager {
         try {
             c = getConnection();
             ResultSet rs = executeQueryWithResultSet(new StringBuilder("show tables"), c);
-            if (rs != null){
-                while (rs.next()){
-                    if (rs.getString(1).startsWith("_")){
+            if (rs != null) {
+                while (rs.next()) {
+                    if (rs.getString(1).startsWith("_")) {
                         toReturn.add(rs.getString(1));
                     }
                 }
 
             }
-               
+
         } finally {
             close(c);
         }
         return toReturn;
     }
 
+    /**
+     * Executes a streaming query with the specified SQL query, binary fields
+     * linkage, and database connection.
+     *
+     * @param query              The SQL query to execute.
+     * @param binaryFieldsLinked A boolean indicating whether binary fields are
+     *                           linked.
+     * @param conn               The database connection to use for executing the
+     *                           query.
+     * @return A DataEnumerator for streaming the query results.
+     * @throws SQLException If a database access error occurs or the SQL query is
+     *                      invalid.
+     */
     @Override
-    public DataEnumerator streamedExecuteQuery(String query, boolean binaryFieldsLinked, Connection conn) throws SQLException {
+    public DataEnumerator streamedExecuteQuery(String query, boolean binaryFieldsLinked, Connection conn)
+            throws SQLException {
         PreparedStatement ps = null;
         // Support streamed queries for MySQL -- see MySQL Implementation notes:
         // http://dev.mysql.com/doc/refman/5.0/en/connector-j-reference-implementation-notes.html

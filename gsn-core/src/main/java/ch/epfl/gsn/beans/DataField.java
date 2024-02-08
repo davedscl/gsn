@@ -30,138 +30,153 @@ package ch.epfl.gsn.beans;
 
 import java.io.Serializable;
 
-import ch.epfl.gsn.beans.DataField;
-import ch.epfl.gsn.beans.DataTypes;
 import ch.epfl.gsn.utils.GSNRuntimeException;
 
 public final class DataField implements Serializable {
-  
+
    private static final long serialVersionUID = -8841539191525018987L;
-   
+
    private String description = "Not Provided";
-   
+
    private String name;
-   
+
    private byte dataTypeID = -1;
-   
+
    private String type;
 
    private String unit = "";
-   
+
    private boolean index = false;
-   
-   public DataField() {}
 
+   public DataField() {
+   }
 
-   public DataField ( final String fieldName , final String type , final String description) throws GSNRuntimeException {
+   public DataField(final String fieldName, final String type, final String description) throws GSNRuntimeException {
       this.name = fieldName;
       this.type = type;
-      this.dataTypeID = DataTypes.convertTypeNameToGSNTypeID( type );
+      this.dataTypeID = DataTypes.convertTypeNameToGSNTypeID(type);
       this.description = description;
    }
 
    /*
-   * Use this constructor only with types which require precision parameter (char, varchar, blob, binary)
-   * */
-   public DataField ( final String fieldName , final String type, final int precision , final String description) throws GSNRuntimeException {
+    * Use this constructor only with types which require precision parameter (char,
+    * varchar, blob, binary)
+    */
+   public DataField(final String fieldName, final String type, final int precision, final String description)
+         throws GSNRuntimeException {
       this.name = fieldName;
-      this.type = type +"("+precision+")";
-      this.dataTypeID = DataTypes.convertTypeNameToGSNTypeID( this.type );
+      this.type = type + "(" + precision + ")";
+      this.dataTypeID = DataTypes.convertTypeNameToGSNTypeID(this.type);
       this.description = description;
    }
-   
-   public DataField ( final String name , final String type ) {
+
+   public DataField(final String name, final String type) {
       this.name = name;
       this.type = type;
-      this.dataTypeID = DataTypes.convertTypeNameToGSNTypeID( type );
+      this.dataTypeID = DataTypes.convertTypeNameToGSNTypeID(type);
    }
- 
-   public DataField(String colName,byte dataTypeID) {
-     this.name=colName;
-     this.dataTypeID = dataTypeID;
-     this.type = DataTypes.TYPE_NAMES[this.dataTypeID];
-  }
 
-  public String getDescription ( ) {
+   public DataField(String colName, byte dataTypeID) {
+      this.name = colName;
+      this.dataTypeID = dataTypeID;
+      this.type = DataTypes.TYPE_NAMES[this.dataTypeID];
+   }
+
+   public String getDescription() {
       return this.description;
    }
+
    transient boolean fieldNameConvertedToLowerCase = false;
-   public String getName ( ) {
-      if (fieldNameConvertedToLowerCase==false) {
-         fieldNameConvertedToLowerCase=true;
-         this.name=name.toLowerCase( );
+
+   public String getName() {
+      if (fieldNameConvertedToLowerCase == false) {
+         fieldNameConvertedToLowerCase = true;
+         this.name = name.toLowerCase();
       }
       return this.name;
    }
-   
-   public boolean equals ( final Object o ) {
-      if ( this == o ){ return true;}
-      if ( !( o instanceof DataField ) ){ return false;}
-      
-      final DataField dataField = ( DataField ) o;
-      if ( this.name != null ? !this.name.equals( dataField.name ) : dataField.name != null ){ return false;}
+
+   public boolean equals(final Object o) {
+      if (this == o) {
+         return true;
+      }
+      if (!(o instanceof DataField)) {
+         return false;
+      }
+
+      final DataField dataField = (DataField) o;
+      if (this.name == null ?  dataField.name != null : !this.name.equals(dataField.name)) {
+         return false;
+      }
       return true;
    }
-   
+
    /**
     * @return Returns the dataTypeID.
     */
-   public byte getDataTypeID ( ) {
-      if ( this.dataTypeID == -1 ){ this.dataTypeID = DataTypes.convertTypeNameToGSNTypeID( this.type );}
+   public byte getDataTypeID() {
+      if (this.dataTypeID == -1) {
+         this.dataTypeID = DataTypes.convertTypeNameToGSNTypeID(this.type);
+      }
       return this.dataTypeID;
    }
-   
-   public int hashCode ( ) {
-      return ( this.name != null ? this.name.hashCode( ) : 0 );
+
+   public int hashCode() {
+      return (this.name == null ? 0 : this.name.hashCode());
    }
 
-   public String toString ( ) {
-      final StringBuilder result = new StringBuilder( );
-      result.append( "[Field-Name:" ).append( this.name ).append( ", Type:" ).append( DataTypes.TYPE_NAMES[ this.getDataTypeID( ) ] ).append( "[" + this.type + "]" )
-            .append( ", Decription:" ).append( this.description )
-            .append( ", Unit:" ).append( this.unit )
-            .append( "]" );
-      return result.toString( );
+   public String toString() {
+      final StringBuilder result = new StringBuilder();
+      result.append("[Field-Name:").append(this.name).append(", Type:")
+            .append(DataTypes.TYPE_NAMES[this.getDataTypeID()]).append("[" + this.type + "]")
+            .append(", Decription:").append(this.description)
+            .append(", Unit:").append(this.unit)
+            .append("]");
+      return result.toString();
    }
-   
+
    /**
     * @return Returns the type. This method is just used in the web interface
-    * for detection the output of binary fields.
+    *         for detection the output of binary fields.
     */
-   public String getType ( ) {
+   public String getType() {
       return this.type;
    }
 
-    public String getUnit() {
-        return unit;
-    }
-    public void setName(String name) {
-        this.name=name;
-    }    
-    public void setDescription(String desc) {
-        this.description=desc;
-    }
-    public void setType(String dtype) {
-        this.type = dtype;
-    }
-    public void setUnit(String unit) {
-        this.unit = unit;
-    }
+   public String getUnit() {
+      return unit;
+   }
+
+   public void setName(String name) {
+      this.name = name;
+   }
+
+   public void setDescription(String desc) {
+      this.description = desc;
+   }
+
+   public void setType(String dtype) {
+      this.type = dtype;
+   }
+
+   public void setUnit(String unit) {
+      this.unit = unit;
+   }
 
    public void setIndex(String index) {
-	   if (index.compareToIgnoreCase("true")==0){
+      if (index.compareToIgnoreCase("true") == 0) {
          this.index = true;
-      }else{
+      } else {
          this.index = false;
       }
-		   
+
    }
-   
+
    public void setIndex(boolean index) {
-	   this.index = index;
+      this.index = index;
    }
-   
+
    public boolean getIndex() {
-	   return index;
+      return index;
    }
 }

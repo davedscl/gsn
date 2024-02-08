@@ -44,6 +44,13 @@ public class GridTools {
 
     private static transient Logger logger = LoggerFactory.getLogger(GridTools.class);
 
+    /**
+     * Converts a byte array into a string representation of a deserialized 2D array
+     * of Double values.
+     *
+     * @param bytes The byte array representing the serialized data.
+     * @return A string representation of the deserialized data.
+     */
     public static String deSerializeToString(byte[] bytes) {
 
         StringBuilder sb = new StringBuilder();
@@ -58,9 +65,11 @@ public class GridTools {
 
             deserial = (Double[][]) in.readObject();
             in.close();
-
-            logger.debug("deserial.length" + deserial.length);
-            logger.debug("deserial[0].length" + deserial[0].length);
+            
+            if(logger.isDebugEnabled()){
+				logger.debug("deserial.length" + deserial.length);
+                logger.debug("deserial[0].length" + deserial[0].length);
+			}
 
             for (int i = 0; i < deserial.length; i++) {
 
@@ -79,6 +88,15 @@ public class GridTools {
         return sb.toString();
     }
 
+    /**
+     * Responsible for deserializing a byte array into a 2D array of Double values
+     * and retrieving the valua at a specific cell position.
+     *
+     * @param bytes The byte array representing the serialized data.
+     * @param xcell The x-coordinate of the desired cell.
+     * @param ycell The y-coordinate of the desired cell.
+     * @return The value at the specified cell position.
+     */
     public static double deSerializeToCell(byte[] bytes, int xcell, int ycell) {
 
         StringBuilder sb = new StringBuilder();
@@ -95,8 +113,10 @@ public class GridTools {
             deserial = (Double[][]) in.readObject();
             in.close();
 
-            logger.debug("deserial.length" + deserial.length);
-            logger.debug("deserial[0].length" + deserial[0].length);
+            if(logger.isDebugEnabled()){
+				logger.debug("deserial.length" + deserial.length);
+                logger.debug("deserial[0].length" + deserial[0].length);
+			}
 
             value = deserial[ycell][xcell];
 
@@ -109,6 +129,19 @@ public class GridTools {
         return value;
     }
 
+    /**
+     * Responsible for deserializing a byte array into a 2D array of Double values
+     * and returning a string representation of the deserialized data within
+     * specified boundaries.
+     *
+     * @param bytes The byte array representing the serialized data.
+     * @param xmin  The minimum x-coordinate of the desired data boundaries.
+     * @param xmax  The maximum x-coordinate of the desired data boundaries.
+     * @param ymin  The minimum y-coordinate of the desired data boundaries.
+     * @param ymax  The maximum y-coordinate of the desired data boundaries.
+     * @return A string representation of the deserialized data within the specified
+     *         boundaries.
+     */
     public static String deSerializeToStringWithBoundaries(byte[] bytes, int xmin, int xmax, int ymin, int ymax) {
 
         StringBuilder sb = new StringBuilder();
@@ -123,9 +156,11 @@ public class GridTools {
 
             deserial = (Double[][]) in.readObject();
             in.close();
-
-            logger.debug("deserial.length" + deserial.length);
-            logger.debug("deserial[0].length" + deserial[0].length);
+            
+            if(logger.isDebugEnabled()){
+				logger.debug("deserial.length" + deserial.length);
+                logger.debug("deserial[0].length" + deserial[0].length);
+			}
 
             for (int i = ymin; i <= ymax; i++) {
 
@@ -144,9 +179,12 @@ public class GridTools {
         return sb.toString();
     }
 
-    /*
-    * deserialization
-    * */
+    /**
+     * Deserializes a byte array into a 2D array of Double values.
+     *
+     * @param bytes The byte array representing the serialized data.
+     * @return The deserialized 2D array of Double values.
+     */
     public static Double[][] deSerialize(byte[] bytes) {
 
         Double deserial[][] = new Double[0][];
@@ -160,14 +198,18 @@ public class GridTools {
             deserial = (Double[][]) in.readObject();
             in.close();
 
-            logger.debug("deserial.length : " + deserial.length +", deserial[0].length" + deserial[0].length);
+            if(logger.isDebugEnabled()){
+				logger.debug("deserial.length : " + deserial.length + ", deserial[0].length" + deserial[0].length);
+			}
 
             for (int i = 0; i < deserial.length; i++) {
                 StringBuilder sb = new StringBuilder();
                 for (int j = 0; j < deserial[0].length; j++) {
                     sb.append(deserial[i][j]).append(" ");
                 }
-                logger.debug(sb.toString());
+                if(logger.isDebugEnabled()){
+                    logger.debug(sb.toString());
+                }
             }
 
         } catch (IOException e) {
@@ -179,6 +221,14 @@ public class GridTools {
         return deserial;
     }
 
+    /**
+     * Executes a SQL query on a database and returns the results as a formatted
+     * string.
+     *
+     * @param query  The SQL query to be executed.
+     * @param sensor The sensor for the database connection.
+     * @return The results of the query as a formatted string.
+     */
     public static String executeQueryForGridAsString(String query, String sensor) {
 
         Connection connection = null;
@@ -187,14 +237,15 @@ public class GridTools {
 
         try {
             connection = Main.getStorage(sensor).getConnection();
-            Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+            Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
+                    ResultSet.CONCUR_READ_ONLY);
             results = statement.executeQuery(query);
-            ResultSetMetaData metaData;    // Additional information about the results
-            int numCols, numRows;          // How many rows and columns in the table
-            metaData = results.getMetaData();       // Get metadata on them
-            numCols = metaData.getColumnCount();    // How many columns?
-            results.last();                         // Move to last row
-            numRows = results.getRow();             // How many rows?
+            ResultSetMetaData metaData; // Additional information about the results
+            int numCols, numRows; // How many rows and columns in the table
+            metaData = results.getMetaData(); // Get metadata on them
+            numCols = metaData.getColumnCount(); // How many columns?
+            results.last(); // Move to last row
+            numRows = results.getRow(); // How many rows?
 
             String s;
 
@@ -208,20 +259,21 @@ public class GridTools {
             for (int col = 0; col < numCols; col++) {
                 columnLabel[col] = metaData.getColumnLabel(col + 1);
                 typ[col] = Main.getDefaultStorage().convertLocalTypeToGSN(metaData.getColumnType(col + 1));
-                if (typ[col] == -100){
-                    logger.error("The type can't be converted to GSN form - error description: column label is:"+columnLabel[col]+", query is: " + query);
+                if (typ[col] == -100) {
+                    logger.error("The type can't be converted to GSN form - error description: column label is:"
+                            + columnLabel[col] + ", query is: " + query);
                 }
             }
 
             for (int row = 0; row < numRows; row++) {
-                results.absolute(row + 1);                // Go to the specified row
+                results.absolute(row + 1); // Go to the specified row
                 for (int col = 0; col < numCols; col++) {
                     Object o = results.getObject(col + 1); // Get value of the column
-                    if (o == null){
+                    if (o == null) {
                         s = "null";
                     } else {
                         s = o.toString();
-                    }  
+                    }
                     if (typ[col] == DataTypes.BINARY) {
                         byte[] bin = (byte[]) o;
                         sb.append(GridTools.deSerializeToString(bin));
@@ -232,10 +284,10 @@ public class GridTools {
                 sb.append("\n");
             }
         } catch (SQLException e) {
-        	logger.warn("SQLException: " + e.getMessage());
+            logger.warn("SQLException: " + e.getMessage());
             sb.append("ERROR in execution of query: " + e.getMessage());
         } finally {
-            if (results != null){
+            if (results != null) {
                 try {
                     results.close();
                 } catch (SQLException e) {
@@ -248,8 +300,20 @@ public class GridTools {
         return sb.toString();
     }
 
-
-    public static Map<Long, Double> executeQueryForCell2TimeSeriesAsListOfDoubles(String query, int xcell, int ycell, String sensor) {
+    /**
+     * Executes a SQL query on a database and returns the results as a map of
+     * timestamps and values.
+     * The query is executed for a specific cell identified by its x and y
+     * coordinates.
+     *
+     * @param query  The SQL query to be executed.
+     * @param xcell  The x-coordinate of the cell.
+     * @param ycell  The y-coordinate of the cell.
+     * @param sensor The sensor for the database connection.
+     * @return A map of timestamps and values representing the result of the query.
+     */
+    public static Map<Long, Double> executeQueryForCell2TimeSeriesAsListOfDoubles(String query, int xcell, int ycell,
+            String sensor) {
 
         Map<Long, Double> listOfDoubles = new HashMap<Long, Double>();
         Connection connection = null;
@@ -257,15 +321,16 @@ public class GridTools {
         ResultSet results = null;
 
         try {
-        	connection = Main.getStorage(sensor).getConnection();
-            Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+            connection = Main.getStorage(sensor).getConnection();
+            Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
+                    ResultSet.CONCUR_READ_ONLY);
             results = statement.executeQuery(query);
-            ResultSetMetaData metaData;    // Additional information about the results
-            int numCols, numRows;          // How many rows and columns in the table
-            metaData = results.getMetaData();       // Get metadata on them
-            numCols = metaData.getColumnCount();    // How many columns?
-            results.last();                         // Move to last row
-            numRows = results.getRow();             // How many rows?
+            ResultSetMetaData metaData; // Additional information about the results
+            int numCols, numRows; // How many rows and columns in the table
+            metaData = results.getMetaData(); // Get metadata on them
+            numCols = metaData.getColumnCount(); // How many columns?
+            results.last(); // Move to last row
+            numRows = results.getRow(); // How many rows?
 
             String s;
 
@@ -275,8 +340,9 @@ public class GridTools {
             for (int col = 0; col < numCols; col++) {
                 columnLabel[col] = metaData.getColumnLabel(col + 1);
                 typ[col] = Main.getDefaultStorage().convertLocalTypeToGSN(metaData.getColumnType(col + 1));
-                if (typ[col] == -100){
-                    logger.error("The type can't be converted to GSN form - error description: column label is: "+columnLabel[col]+", query is: " + query);
+                if (typ[col] == -100) {
+                    logger.error("The type can't be converted to GSN form - error description: column label is: "
+                            + columnLabel[col] + ", query is: " + query);
                 }
             }
 
@@ -285,12 +351,12 @@ public class GridTools {
 
             for (int row = 0; row < numRows; row++) {
                 sb = new StringBuilder("");
-                results.absolute(row + 1);                // Go to the specified row
+                results.absolute(row + 1); // Go to the specified row
                 for (int col = 0; col < numCols; col++) {
                     Object o = results.getObject(col + 1); // Get value of the column
-                    if (o == null){
+                    if (o == null) {
                         s = "null";
-                    } else{
+                    } else {
                         s = o.toString();
                     }
                     if (columnLabel[col].equalsIgnoreCase("timed")) {
@@ -306,12 +372,12 @@ public class GridTools {
                 listOfDoubles.put(timed, value);
             }
 
-            //.add(sb.toString());
+            // .add(sb.toString());
         } catch (SQLException e) {
-        	logger.warn("SQLException: " + e.getMessage());
+            logger.warn("SQLException: " + e.getMessage());
             sb.append("ERROR in execution of query: " + e.getMessage());
         } finally {
-            if (results != null){
+            if (results != null) {
                 try {
                     results.close();
                 } catch (SQLException e) {
@@ -325,7 +391,20 @@ public class GridTools {
         return listOfDoubles;
     }
 
-    public static Map<Long, String> executeQueryForSubGridAsListOfStrings(String query, int xmin, int xmax, int ymin, int ymax, String sensor) {
+    /**
+     * Executes a SQL query on a database and returns the results as a map of
+     * timestamps and strings.
+     *
+     * @param query  the SQL query to execute
+     * @param xmin   the minimum x coordinate of the subgrid
+     * @param xmax   the maximum x coordinate of the subgrid
+     * @param ymin   the minimum y coordinate of the subgrid
+     * @param ymax   the maximum y coordinate of the subgrid
+     * @param sensor the sensor for the database connection
+     * @return a map of timestamps and strings representing the query results
+     */
+    public static Map<Long, String> executeQueryForSubGridAsListOfStrings(String query, int xmin, int xmax, int ymin,
+            int ymax, String sensor) {
 
         Map<Long, String> listOfStrings = new HashMap<Long, String>();
         Connection connection = null;
@@ -333,20 +412,18 @@ public class GridTools {
         ResultSet results = null;
 
         try {
-        	connection = Main.getStorage(sensor).getConnection();
-            Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+            connection = Main.getStorage(sensor).getConnection();
+            Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
+                    ResultSet.CONCUR_READ_ONLY);
             results = statement.executeQuery(query);
-            ResultSetMetaData metaData;    // Additional information about the results
-            int numCols, numRows;          // How many rows and columns in the table
-            metaData = results.getMetaData();       // Get metadata on them
-            numCols = metaData.getColumnCount();    // How many columns?
-            results.last();                         // Move to last row
-            numRows = results.getRow();             // How many rows?
+            ResultSetMetaData metaData; // Additional information about the results
+            int numCols, numRows; // How many rows and columns in the table
+            metaData = results.getMetaData(); // Get metadata on them
+            numCols = metaData.getColumnCount(); // How many columns?
+            results.last(); // Move to last row
+            numRows = results.getRow(); // How many rows?
 
             String s;
-
-
-
 
             byte typ[] = new byte[numCols];
             String columnLabel[] = new String[numCols];
@@ -354,8 +431,9 @@ public class GridTools {
             for (int col = 0; col < numCols; col++) {
                 columnLabel[col] = metaData.getColumnLabel(col + 1);
                 typ[col] = Main.getDefaultStorage().convertLocalTypeToGSN(metaData.getColumnType(col + 1));
-                if (typ[col] == -100){
-                    logger.error("The type can't be converted to GSN form - error description: column label is:"+columnLabel[col]+", query is: " + query);
+                if (typ[col] == -100) {
+                    logger.error("The type can't be converted to GSN form - error description: column label is:"
+                            + columnLabel[col] + ", query is: " + query);
                 }
             }
 
@@ -363,19 +441,19 @@ public class GridTools {
 
             for (int row = 0; row < numRows; row++) {
                 sb = new StringBuilder("");
-                results.absolute(row + 1);                // Go to the specified row
+                results.absolute(row + 1); // Go to the specified row
                 for (int col = 0; col < numCols; col++) {
                     Object o = results.getObject(col + 1); // Get value of the column
-                    if (o == null){
+                    if (o == null) {
                         s = "null";
                     } else {
                         s = o.toString();
                     }
-                        
-                    if (columnLabel[col].equalsIgnoreCase("pk")){
+
+                    if (columnLabel[col].equalsIgnoreCase("pk")) {
                         continue; // skip PK field
                     }
-                        
+
                     if (columnLabel[col].equalsIgnoreCase("timed")) {
                         timed = Long.valueOf(s);
                         continue;
@@ -400,12 +478,12 @@ public class GridTools {
                 listOfStrings.put(timed, sb.toString());
             }
 
-            //.add(sb.toString());
+            // .add(sb.toString());
         } catch (SQLException e) {
-        	logger.warn("SQLException: " + e.getMessage());
+            logger.warn("SQLException: " + e.getMessage());
             sb.append("ERROR in execution of query: " + e.getMessage());
         } finally {
-            if (results != null){
+            if (results != null) {
                 try {
                     results.close();
                 } catch (SQLException e) {
@@ -418,6 +496,14 @@ public class GridTools {
         return listOfStrings;
     }
 
+    /**
+     * Executes a SQL query on a database and returns the results as a map of
+     * timestamps and strings.
+     *
+     * @param query  the SQL query to execute
+     * @param sensor the sensor for the database connection
+     * @return a map of timestamps and strings representing the query results
+     */
     public static Map<Long, String> executeQueryForGridAsListOfStrings(String query, String sensor) {
 
         Map<Long, String> listOfStrings = new HashMap<Long, String>();
@@ -427,19 +513,17 @@ public class GridTools {
 
         try {
             connection = Main.getStorage(sensor).getConnection();
-            Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+            Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
+                    ResultSet.CONCUR_READ_ONLY);
             results = statement.executeQuery(query);
-            ResultSetMetaData metaData;    // Additional information about the results
-            int numCols, numRows;          // How many rows and columns in the table
-            metaData = results.getMetaData();       // Get metadata on them
-            numCols = metaData.getColumnCount();    // How many columns?
-            results.last();                         // Move to last row
-            numRows = results.getRow();             // How many rows?
+            ResultSetMetaData metaData; // Additional information about the results
+            int numCols, numRows; // How many rows and columns in the table
+            metaData = results.getMetaData(); // Get metadata on them
+            numCols = metaData.getColumnCount(); // How many columns?
+            results.last(); // Move to last row
+            numRows = results.getRow(); // How many rows?
 
             String s;
-
-
-
 
             byte typ[] = new byte[numCols];
             String columnLabel[] = new String[numCols];
@@ -447,8 +531,9 @@ public class GridTools {
             for (int col = 0; col < numCols; col++) {
                 columnLabel[col] = metaData.getColumnLabel(col + 1);
                 typ[col] = Main.getDefaultStorage().convertLocalTypeToGSN(metaData.getColumnType(col + 1));
-                if (typ[col] == -100){
-                    logger.error("The type can't be converted to GSN form - error description:  column label is:"+columnLabel[col]+", query is: " + query);
+                if (typ[col] == -100) {
+                    logger.error("The type can't be converted to GSN form - error description:  column label is:"
+                            + columnLabel[col] + ", query is: " + query);
                 }
             }
 
@@ -456,15 +541,15 @@ public class GridTools {
 
             for (int row = 0; row < numRows; row++) {
                 sb = new StringBuilder("");
-                results.absolute(row + 1);                // Go to the specified row
+                results.absolute(row + 1); // Go to the specified row
                 for (int col = 0; col < numCols; col++) {
                     Object o = results.getObject(col + 1); // Get value of the column
-                    if (o == null){
+                    if (o == null) {
                         s = "null";
                     } else {
                         s = o.toString();
                     }
-                    if (columnLabel[col].equalsIgnoreCase("pk")){
+                    if (columnLabel[col].equalsIgnoreCase("pk")) {
                         continue; // skip PK field
                     }
                     if (columnLabel[col].equalsIgnoreCase("timed")) {
@@ -485,12 +570,12 @@ public class GridTools {
                 listOfStrings.put(timed, sb.toString());
             }
 
-            //.add(sb.toString());
+            // .add(sb.toString());
         } catch (SQLException e) {
             sb.append("ERROR in execution of query: " + e.getMessage());
             logger.warn("SQLException: " + e.getMessage());
         } finally {
-            if (results != null){
+            if (results != null) {
                 try {
                     results.close();
                 } catch (SQLException e) {
@@ -500,7 +585,7 @@ public class GridTools {
 
             Main.getStorage(sensor).close(connection);
         }
-   
+
         return listOfStrings;
     }
 }

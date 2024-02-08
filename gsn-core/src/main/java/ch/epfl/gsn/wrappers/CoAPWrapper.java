@@ -28,7 +28,6 @@ package ch.epfl.gsn.wrappers;
 import ch.epfl.gsn.beans.AddressBean;
 import ch.epfl.gsn.beans.DataField;
 import ch.epfl.gsn.networking.mqtt.MQTTWrapper;
-import ch.epfl.gsn.wrappers.AbstractWrapper;
 import java.io.Serializable;
 import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapResponse;
@@ -37,72 +36,93 @@ import org.eclipse.californium.core.CoapHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+public class CoAPWrapper extends AbstractWrapper implements CoapHandler {
 
-public class CoAPWrapper extends AbstractWrapper implements CoapHandler{
-	
 	private final transient Logger logger = LoggerFactory.getLogger(MQTTWrapper.class);
 
-	private String serverURI; //="coap://[you_ipv6]:5683/.temp";
+	private String serverURI; // ="coap://[you_ipv6]:5683/.temp";
 	private AddressBean addressBean;
 	private CoapClient client;
 	private long nextExpectedMessage;
-   
+
 	@Override
 	public DataField[] getOutputFormat() {
-		return new DataField[] {new DataField( "raw_packet" , "BINARY" , "The packet contains raw data received in the CoAP payload." ) };
+		return new DataField[] {
+				new DataField("raw_packet", "BINARY", "The packet contains raw data received in the CoAP payload.") };
 	}
 
-    @Override
-    public boolean initialize() {
-    	try {
-			addressBean = getActiveAddressBean( );
+	/**
+	 * Initializes the CoAPWrapper by retrieving the server URI from the active
+	 * address bean.
+	 * If the server URI is missing or empty, the initialization fails.
+	 * 
+	 * @return true if the initialization is successful, false otherwise.
+	 */
+	@Override
+	public boolean initialize() {
+		try {
+			addressBean = getActiveAddressBean();
 			serverURI = addressBean.getPredicateValue("uri");
-			if ( serverURI == null || serverURI.trim().length() == 0 ) {
-				logger.error( "The uri parameter is missing from the CoAP wrapper, initialization failed." );
+			if (serverURI == null || serverURI.trim().length() == 0) {
+				logger.error("The uri parameter is missing from the CoAP wrapper, initialization failed.");
 				return false;
 			}
-    	}catch (Exception e){
-			logger.error("Error in instanciating CoAP Client @ "+serverURI,e);
+		} catch (Exception e) {
+			logger.error("Error in instanciating CoAP Client @ " + serverURI, e);
 			return false;
 		}
-       return true;
-    }
+		return true;
+	}
 
-    @Override
-    public void dispose() {
+	@Override
+	public void dispose() {
 
-    }
+	}
 
-    @Override
-    public String getWrapperName() {
-       return "CoAP Wrapper";
-    }
-    
-    public void run(){
-          
-    	client = new CoapClient(serverURI);
-        
-        while(isActive()){
-        	if (System.currentTimeMillis() / 1000 > nextExpectedMessage){
-        	    client.observe(this);
-        	}
-		    try{
-		      Thread.sleep(60000);
-		    }catch(Exception ex){}
-		 }           
-    }
+	@Override
+	public String getWrapperName() {
+		return "CoAP Wrapper";
+	}
 
+	/**
+	 * Runs the CoAP client and continuously observes the server for updates.
+	 * The client sends an observe request to the server at regular intervals and
+	 * waits for updates.
+	 * If an update is received, the client's callback method will be invoked.
+	 * This method runs in a loop until the client is deactivated.
+	 */
+	public void run() {
+
+		client = new CoapClient(serverURI);
+
+		while (isActive()) {
+			if (System.currentTimeMillis() / 1000 > nextExpectedMessage) {
+				client.observe(this);
+			}
+			try {
+				Thread.sleep(60000);
+			} catch (Exception ex) {
+			}
+		}
+	}
 
 	@Override
 	public void onError() {
-		logger.error( "CoAP observation error..." );
+		logger.error("CoAP observation error...");
 	}
-	
+
+	/**
+	 * This method is called when a CoAP response is loaded.
+	 * It updates the next expected message time and posts the response payload to
+	 * the stream element.
+	 * 
+	 * @param response The CoAP response object.
+	 */
 	@Override
 	public void onLoad(CoapResponse response) {
 		OptionSet os = response.getOptions();
 		nextExpectedMessage = os.getMaxAge() * 2 + (System.currentTimeMillis() / 1000);
-		postStreamElement(new Serializable[]{response.getPayload()});
+		postStreamElement(new Serializable[] { response.getPayload() });
 	}
 
 }

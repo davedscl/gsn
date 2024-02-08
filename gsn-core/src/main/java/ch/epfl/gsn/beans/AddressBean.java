@@ -33,37 +33,34 @@ import java.io.Serializable;
 
 import org.apache.commons.collections.KeyValue;
 
-import ch.epfl.gsn.beans.AddressBean;
-
-public final class AddressBean implements Serializable{
+public final class AddressBean implements Serializable {
 
 	private static final long serialVersionUID = -8975180532136014200L;
 
-	private static final KeyValue[] EMPTY_PREDICATES = new  KeyValue[0];
+	private static final KeyValue[] EMPTY_PREDICATES = new KeyValue[0];
 
 	private String wrapper;
 
 	private String partialOrderKey;
-	
-	private  KeyValue[] predicates  = EMPTY_PREDICATES;
 
-	
-	private DataField [] wrapperOutputStructure = new DataField[0];
+	private KeyValue[] predicates = EMPTY_PREDICATES;
+
+	private DataField[] wrapperOutputStructure = new DataField[0];
 
 	private double random = Math.random();
 
-	public AddressBean () {
+	public AddressBean() {
 		this.predicates = EMPTY_PREDICATES;
 	}
 
-	public AddressBean ( final String wrapper , KeyValue... newPredicates ) {
+	public AddressBean(final String wrapper, KeyValue... newPredicates) {
 		this.wrapper = wrapper;
-		if (newPredicates == null){
-			this.predicates=EMPTY_PREDICATES;
-		} else{
+		if (newPredicates == null) {
+			this.predicates = EMPTY_PREDICATES;
+		} else {
 			this.predicates = newPredicates;
 		}
-			
+
 	}
 
 	public AddressBean(final String wrapper) {
@@ -74,34 +71,42 @@ public final class AddressBean implements Serializable{
 	public String getWrapper() {
 		return this.wrapper;
 	}
-	
-	public String getPartialOrderKey(){
+
+	public String getPartialOrderKey() {
 		return this.partialOrderKey;
 	}
-	
+
 	public void setPartialOrderKey(String key) {
 		this.partialOrderKey = key;
-		
+
 	}
 
-	public  KeyValue[] getPredicates() {
+	public KeyValue[] getPredicates() {
 		return this.predicates;
 	}
 
-	public String getPredicateValueWithException ( String key ) {
-		key = key.trim( );
-		for (  KeyValue predicate : this.predicates ) {
-			if ( predicate.getKey( ).toString( ).trim( ).equalsIgnoreCase( key ) ) {
-				final String value = ( String ) predicate.getValue( );
-				if (value.trim().length()>0){
+	/**
+	 * Retrieves the value associated with the specified key from the predicates
+	 * list.
+	 * 
+	 * @param key the key to search for
+	 * @return the value associated with the key
+	 * @throws RuntimeException if the key is not found in the predicates list
+	 */
+	public String getPredicateValueWithException(String key) {
+		key = key.trim();
+		for (KeyValue predicate : this.predicates) {
+			if (predicate.getKey().toString().trim().equalsIgnoreCase(key)) {
+				final String value = (String) predicate.getValue();
+				if (value.trim().length() > 0) {
 					return value;
 				}
-					
+
 			}
 		}
-		throw new RuntimeException("The required parameter: >"+key+"<+ is missing.from the virtual sensor configuration file.");
+		throw new RuntimeException(
+				"The required parameter: >" + key + "<+ is missing.from the virtual sensor configuration file.");
 	}
-
 
 	/**
 	 * Note that the key for the value is case insensitive.
@@ -110,62 +115,79 @@ public final class AddressBean implements Serializable{
 	 * @return
 	 */
 
-	public String getPredicateValue ( String key ) {
-		key = key.trim( );
-		for (  KeyValue predicate : this.predicates ) {
-			if ( predicate.getKey( ).toString( ).trim( ).equalsIgnoreCase( key ) ){ return ( ( String ) predicate.getValue( ));}
+	public String getPredicateValue(String key) {
+		key = key.trim();
+		for (KeyValue predicate : this.predicates) {
+			if (predicate.getKey().toString().trim().equalsIgnoreCase(key)) {
+				return ((String) predicate.getValue());
+			}
 		}
 		return null;
 	}
 
 	/**
-	 * Gets a parameter name. If the parameter value exists and is not an empty string, returns the value otherwise returns the
+	 * Gets a parameter name. If the parameter value exists and is not an empty
+	 * string, returns the value otherwise returns the
 	 * default value
-	 * @param key The key to look for in the map.
-	 * @param defaultValue Will be return if the key is not present or its an empty string.
+	 * 
+	 * @param key          The key to look for in the map.
+	 * @param defaultValue Will be return if the key is not present or its an empty
+	 *                     string.
 	 * @return
 	 */
 	public String getPredicateValueWithDefault(String key, String defaultValue) {
 		String value = getPredicateValue(key);
-		if (value==null|| value.trim().length()==0){
+		if (value == null || value.trim().length() == 0) {
 			return defaultValue;
-		} 
+		}
 		return value;
 	}
 
 	/**
-	 * Gets a parameter name. If the parameter value exists and is a valid integer, returns the value otherwise returns the
+	 * Gets a parameter name. If the parameter value exists and is a valid integer,
+	 * returns the value otherwise returns the
 	 * default value
-	 * @param key The key to look for in the map.
-	 * @param defaultValue Will be return if the key is not present or its value is not a valid integer.
+	 * 
+	 * @param key          The key to look for in the map.
+	 * @param defaultValue Will be return if the key is not present or its value is
+	 *                     not a valid integer.
 	 * @return
 	 */
 	public int getPredicateValueAsInt(String key, int defaultValue) {
 		String value = getPredicateValue(key);
-		if (value==null|| value.trim().length()==0){
+		if (value == null || value.trim().length() == 0) {
 			return defaultValue;
 		}
-			
-		try { 
+
+		try {
 			return Integer.parseInt(value);
-		}catch (Exception e) {
+		} catch (Exception e) {
 			return defaultValue;
 		}
 	}
 
-	public int getPredicateValueAsIntWithException ( String key ) {
+	/**
+	 * Retrieves the value of a predicate as an integer, throwing an exception if
+	 * the value is missing or cannot be parsed as an integer.
+	 * 
+	 * @param key the key of the predicate
+	 * @return the value of the predicate as an integer
+	 * @throws RuntimeException if the value is missing or cannot be parsed as an
+	 *                          integer
+	 */
+	public int getPredicateValueAsIntWithException(String key) {
 		String value = getPredicateValue(key);
-		if (value==null|| value.trim().length()==0){
-			throw new RuntimeException("The required parameter: >"+key+"<+ is missing.from the virtual sensor configuration file.");
+		if (value == null || value.trim().length() == 0) {
+			throw new RuntimeException(
+					"The required parameter: >" + key + "<+ is missing.from the virtual sensor configuration file.");
 		}
-		try { 
+		try {
 			return Integer.parseInt(value);
-		}catch (Exception e) {
-			throw new RuntimeException("The required parameter: >"+key+"<+ is bad formatted.from the virtual sensor configuration file.",e);
+		} catch (Exception e) {
+			throw new RuntimeException("The required parameter: >" + key
+					+ "<+ is bad formatted.from the virtual sensor configuration file.", e);
 		}
 	}
-
-
 
 	public int hashCode() {
 		final int prime = 31;
@@ -177,34 +199,34 @@ public final class AddressBean implements Serializable{
 	}
 
 	public boolean equals(Object obj) {
-		if (this == obj){
+		if (this == obj) {
 			return true;
 		}
-			
-		if (obj == null){
+
+		if (obj == null) {
 			return false;
 		}
-			
-		if (getClass() != obj.getClass()){
+
+		if (getClass() != obj.getClass()) {
 			return false;
 		}
-			
+
 		AddressBean other = (AddressBean) obj;
 		if (Double.doubleToLongBits(random) != Double
-				.doubleToLongBits(other.random)){
-					return false;
-				}
-			
+				.doubleToLongBits(other.random)) {
+			return false;
+		}
+
 		return true;
 	}
 
-	public String toString ( ) {
-		final StringBuffer result = new StringBuffer( "[" ).append( this.getWrapper( ) );
-		for ( final KeyValue predicate : this.predicates ) {
-			result.append( predicate.getKey( ) + " = " + predicate.getValue( ) + "," );
+	public String toString() {
+		final StringBuffer result = new StringBuffer("[").append(this.getWrapper());
+		for (final KeyValue predicate : this.predicates) {
+			result.append(predicate.getKey() + " = " + predicate.getValue() + ",");
 		}
-		result.append( "]" );
-		return result.toString( );
+		result.append("]");
+		return result.toString();
 	}
 
 	private String inputStreamName;
@@ -242,6 +264,5 @@ public final class AddressBean implements Serializable{
 	public void setVirtualSensorConfig(VSensorConfig vsconfig) {
 		this.vsconfig = vsconfig;
 	}
-
 
 }

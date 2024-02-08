@@ -80,12 +80,12 @@ public abstract class AbstractWrapper extends Thread implements Monitorable {
 
 	private boolean usingRemoteTimestamp = false;
 
-	private Hashtable<Object,Long> lastInOrderTimestamp = new Hashtable<Object, Long>();
+	private Hashtable<Object, Long> lastInOrderTimestamp = new Hashtable<Object, Long>();
 
 	public static final int GARBAGE_COLLECT_AFTER_SPECIFIED_NO_OF_ELEMENTS = 2;
-	
+
 	private Long oooCount = 0L;
-	
+
 	private Long elementCount = 0L;
 
 	/**
@@ -103,20 +103,22 @@ public abstract class AbstractWrapper extends Thread implements Monitorable {
 				addSlidingHandler(timeBasedSlidingHandler);
 			}
 		} else {
-			if (tupleBasedSlidingHandler == null){
+			if (tupleBasedSlidingHandler == null) {
 				tupleBasedSlidingHandler = new TupleBasedSlidingHandler(this);
 			}
 			addSlidingHandler(tupleBasedSlidingHandler);
 		}
 
 		for (SlidingHandler slidingHandler : slidingHandlers.values()) {
-			if (slidingHandler.isInterestedIn(ss)){
+			if (slidingHandler.isInterestedIn(ss)) {
 				slidingHandler.addStreamSource(ss);
-			}	
+			}
 		}
 
 		listeners.add(ss);
-		logger.debug("Adding listeners: " + ss.toString());
+		if(logger.isDebugEnabled()){
+			logger.debug("Adding listeners: " + ss.toString());
+		}
 	}
 
 	public void addSlidingHandler(SlidingHandler slidingHandler) {
@@ -132,14 +134,14 @@ public abstract class AbstractWrapper extends Thread implements Monitorable {
 		listeners.remove(ss);
 		// getStorageManager( ).executeDropView( ss.getUIDStr() );
 		for (SlidingHandler slidingHandler : slidingHandlers.values()) {
-			if (slidingHandler.isInterestedIn(ss)){
+			if (slidingHandler.isInterestedIn(ss)) {
 				slidingHandler.removeStreamSource(ss);
-			}	
+			}
 		}
 		if (listeners.size() == 0) {
 			releaseResources();
 		}
-		
+
 	}
 
 	/**
@@ -149,10 +151,10 @@ public abstract class AbstractWrapper extends Thread implements Monitorable {
 		return listeners;
 	}
 
-	//protected StorageManager getStorageManager() {
-	//	return StorageManager.getInstance();
-    //
-	//}
+	// protected StorageManager getStorageManager() {
+	// return StorageManager.getInstance();
+	//
+	// }
 
 	/**
 	 * This method is called whenever the wrapper wants to send a data item back
@@ -163,13 +165,17 @@ public abstract class AbstractWrapper extends Thread implements Monitorable {
 	 * back to the WSN could be a command message or a configuration message.
 	 * 
 	 * @param dataItem
-	 *            : The data which is going to be send to the source of the data
-	 *            for this wrapper.
+	 *                 : The data which is going to be send to the source of the
+	 *                 data
+	 *                 for this wrapper.
 	 * @return True if the send operation is successful.
 	 * @throws OperationNotSupportedException
-	 *             If the wrapper doesn't support sending the data back to the
-	 *             source. Note that by default this method throws this
-	 *             exception unless the wrapper overrides it.
+	 *                                        If the wrapper doesn't support sending
+	 *                                        the data back to the
+	 *                                        source. Note that by default this
+	 *                                        method throws this
+	 *                                        exception unless the wrapper overrides
+	 *                                        it.
 	 */
 
 	public boolean sendToWrapper(String action, String[] paramNames,
@@ -190,7 +196,7 @@ public abstract class AbstractWrapper extends Thread implements Monitorable {
 	 * Only sets if there is no other activeAddressBean configured.
 	 * 
 	 * @param newVal
-	 *            the activeAddressBean to set
+	 *               the activeAddressBean to set
 	 */
 	public void setActiveAddressBean(AddressBean newVal) {
 		if (this.activeAddressBean != null) {
@@ -248,15 +254,16 @@ public abstract class AbstractWrapper extends Thread implements Monitorable {
 			return false;
 		}
 		try {
-			if (!isActive() || listeners.size() == 0){
+			if (!isActive() || listeners.size() == 0) {
 				return false;
 			}
-			if (!insertIntoWrapperTable(streamElement)){
+			if (!insertIntoWrapperTable(streamElement)) {
 				return false;
 			}
 			boolean toReturn = false;
-
-			logger.debug("Size of the listeners to be evaluated - "+ listeners.size());
+			if(logger.isDebugEnabled()){
+				logger.debug("Size of the listeners to be evaluated - " + listeners.size());
+			}
 
 			for (SlidingHandler slidingHandler : slidingHandlers.values()) {
 				toReturn = slidingHandler.dataAvailable(streamElement)
@@ -280,78 +287,88 @@ public abstract class AbstractWrapper extends Thread implements Monitorable {
 	 * the table.
 	 * 
 	 * @param se
-	 *            Stream element to be inserted to the table if needed.
+	 *           Stream element to be inserted to the table if needed.
 	 * @return true if the stream element is successfully inserted into the
 	 *         table.
 	 * @throws SQLException
 	 */
 	public boolean insertIntoWrapperTable(StreamElement se) throws SQLException {
-		if (listeners.size() == 0){
+		if (listeners.size() == 0) {
 			return false;
 		}
 		Connection conn = null;
 		try {
-            if (isOutOfOrder(se)) {
-            	oooCount = oooCount == Long.MAX_VALUE ? 0 : oooCount + 1;
-				logger.debug("Out of order data item detected, it is not propagated into the system : [" + se.toString() + "]");
+			if (isOutOfOrder(se)) {
+				oooCount = oooCount == Long.MAX_VALUE ? 0 : oooCount + 1;
+				if(logger.isDebugEnabled()){
+					logger.debug("Out of order data item detected, it is not propagated into the system : [" + se.toString()
+						+ "]");
+				}
 				return false;
 			}
 			conn = Main.getWindowStorage().getConnection();
 			Main.getWindowStorage().executeInsert(aliasCodeS, getOutputFormat(), se, conn);
-			if (getPartialOrdersKey() != null){
-                lastInOrderTimestamp.put(se.getData(getPartialOrdersKey()), se.getTimeStamp());
-			}else{
-				lastInOrderTimestamp.put(0,se.getTimeStamp()); 
+			if (getPartialOrdersKey() == null) {
+				lastInOrderTimestamp.put(0, se.getTimeStamp());
+			} else {
+				lastInOrderTimestamp.put(se.getData(getPartialOrdersKey()), se.getTimeStamp());
 			}
-            elementCount = elementCount == Long.MAX_VALUE ? 0 : elementCount + 1;
-            return true;
+			elementCount = elementCount == Long.MAX_VALUE ? 0 : elementCount + 1;
+			return true;
 		} finally {
 			Main.getWindowStorage().close(conn);
 		}
 	}
 
-    public boolean isOutOfOrder(StreamElement se) throws SQLException {
-        if (listeners.size() == 0){
+	/**
+	 * Checks if the given stream element is out of order.
+	 * 
+	 * @param se The stream element to be checked.
+	 * @return true if the stream element is out of order, false otherwise.
+	 * @throws SQLException if there is an error accessing the database.
+	 */
+	public boolean isOutOfOrder(StreamElement se) throws SQLException {
+		if (listeners.size() == 0) {
 			return false;
 		}
-			
-        Connection conn = null;
-        Object key = 0;
-        if (getPartialOrdersKey() != null){
-        	key = se.getData(getPartialOrdersKey());
-        }
+
+		Connection conn = null;
+		Object key = 0;
+		if (getPartialOrdersKey() != null) {
+			key = se.getData(getPartialOrdersKey());
+		}
 		try {
 			// Checks if the stream element is out of order
-            if (lastInOrderTimestamp.get(key) == null) {
-                conn = Main.getWindowStorage().getConnection();
-                StringBuilder query = new StringBuilder();
+			if (lastInOrderTimestamp.get(key) == null) {
+				conn = Main.getWindowStorage().getConnection();
+				StringBuilder query = new StringBuilder();
 				query.append("select max(timed) from ").append(aliasCodeS);
 				StringBuilder query2 = new StringBuilder();
 				query2.append("select count(*) from ").append(aliasCodeS);
-				if (getPartialOrdersKey() != null){
-					query.append(" where "+getPartialOrdersKey()+"="+key); // code injection !!!
-					query2.append(" where "+getPartialOrdersKey()+"="+key); 
+				if (getPartialOrdersKey() != null) {
+					query.append(" where " + getPartialOrdersKey() + "=" + key); // code injection !!!
+					query2.append(" where " + getPartialOrdersKey() + "=" + key);
 				}
-				ResultSet rs = Main.getWindowStorage().executeQueryWithResultSet(query,conn);
-				ResultSet rs2 = Main.getWindowStorage().executeQueryWithResultSet(query2,conn);
-				int n=rs2.next()?rs2.getInt(1):0;
+				ResultSet rs = Main.getWindowStorage().executeQueryWithResultSet(query, conn);
+				ResultSet rs2 = Main.getWindowStorage().executeQueryWithResultSet(query2, conn);
+				int n = rs2.next() ? rs2.getInt(1) : 0;
 
-				if (rs.next() && n>0) {
-					lastInOrderTimestamp.put(key,rs.getLong(1));
+				if (rs.next() && n > 0) {
+					lastInOrderTimestamp.put(key, rs.getLong(1));
 				} else {
-					lastInOrderTimestamp.put(key,Long.MIN_VALUE); // Table is empty
+					lastInOrderTimestamp.put(key, Long.MIN_VALUE); // Table is empty
 				}
 			}
-            if (isTimeStampUnique()){
+			if (isTimeStampUnique()) {
 				return (se.getTimeStamp() <= lastInOrderTimestamp.get(key));
 			} else {
 				return (se.getTimeStamp() < lastInOrderTimestamp.get(key));
 			}
-            	
+
 		} finally {
 			Main.getWindowStorage().close(conn);
 		}
-    }
+	}
 
 	/**
 	 * This method is called whenever the wrapper wants to send a data item back
@@ -362,20 +379,24 @@ public abstract class AbstractWrapper extends Thread implements Monitorable {
 	 * back to the WSN could be a command message or a configuration message.
 	 * 
 	 * @param dataItem
-	 *            : The data which is going to be send to the source of the data
-	 *            for this wrapper.
+	 *                 : The data which is going to be send to the source of the
+	 *                 data
+	 *                 for this wrapper.
 	 * @return True if the send operation is successful.
 	 * @throws OperationNotSupportedException
-	 *             If the wrapper doesn't support sending the data back to the
-	 *             source. Note that by default this method throws this
-	 *             exception unless the wrapper overrides it.
+	 *                                        If the wrapper doesn't support sending
+	 *                                        the data back to the
+	 *                                        source. Note that by default this
+	 *                                        method throws this
+	 *                                        exception unless the wrapper overrides
+	 *                                        it.
 	 */
 
 	public boolean sendToWrapper(Object dataItem)
 			throws OperationNotSupportedException {
-		if (isActive == false){
+		if (isActive == false) {
 			throw new GSNRuntimeException(
-				"Sending to an inactive/disabled wrapper is not allowed !");
+					"Sending to an inactive/disabled wrapper is not allowed !");
 		}
 		throw new OperationNotSupportedException(
 				"This wrapper doesn't support sending data back to the source.");
@@ -390,12 +411,16 @@ public abstract class AbstractWrapper extends Thread implements Monitorable {
 		StringBuilder condition = new StringBuilder("");
 		synchronized (slidingHandlers) {
 			for (SlidingHandler slidingHandler : slidingHandlers.values()) {
-				if (condition.length()>0){condition.append(" and ");}
+				if (condition.length() > 0) {
+					condition.append(" and ");
+				}
 				condition.append(slidingHandler.getCuttingCondition());
 			}
 		}
-		logger.debug("Cutting condition : " + condition);
-		if (condition.length() == 0){
+		if(logger.isDebugEnabled()){
+			logger.debug("Cutting condition : " + condition);
+		}
+		if (condition.length() == 0) {
 			return null;
 		}
 		StringBuilder sb = new StringBuilder("delete from ").append(
@@ -404,21 +429,46 @@ public abstract class AbstractWrapper extends Thread implements Monitorable {
 		return sb;
 	}
 
+	/**
+	 * Removes useless values from the database table.
+	 * This method executes a query to identify and remove rows that are considered
+	 * useless.
+	 * The query is generated by the getUselessWindow() method.
+	 * If the query is null, indicating that there are no useless rows, this method
+	 * returns 0.
+	 * Otherwise, the query is executed and the number of deleted rows is returned.
+	 *
+	 * @return The number of rows deleted from the database table.
+	 * @throws SQLException If an error occurs while executing the query.
+	 */
 	public int removeUselessValues() throws SQLException {
 		StringBuilder query = getUselessWindow();
-		if (query == null){
+		if (query == null) {
 			return 0;
 		}
-		logger.debug(new StringBuilder().append(
-					"RESULTING QUERY FOR Table Size Enforce ").append(query)
-					.toString());
+		if(logger.isDebugEnabled()){
+			logger.debug(new StringBuilder().append(
+				"RESULTING QUERY FOR Table Size Enforce ").append(query)
+				.toString());
+		}
 		int deletedRows = Main.getWindowStorage().executeUpdate(query);
-		logger.debug(new StringBuilder().append(deletedRows).append(
-					" old rows dropped from ").append(getDBAliasInStr())
-					.toString());
+		if(logger.isDebugEnabled()){
+			logger.debug(new StringBuilder().append(deletedRows).append(
+				" old rows dropped from ").append(getDBAliasInStr())
+				.toString());
+		}
 		return deletedRows;
 	}
 
+	/**
+	 * Releases the resources associated with this wrapper.
+	 * This method sets the isActive flag to false, removes the wrapper from the
+	 * monitor,
+	 * disposes the wrapper, clears the listeners, disposes all sliding handlers,
+	 * and executes a drop table operation on the aliasCodeS table.
+	 *
+	 * @throws SQLException if an error occurs while releasing the resources.
+	 */
 	public void releaseResources() throws SQLException {
 		isActive = false;
 		Main.getInstance().getToMonitor().remove(this);
@@ -432,13 +482,12 @@ public abstract class AbstractWrapper extends Thread implements Monitorable {
 	}
 
 	public static final String TIME_FIELD = "timed";
-	
-	
-	public final boolean initialize_wrapper(){
+
+	public final boolean initialize_wrapper() {
 		boolean r = initialize();
-		if (r){
+		if (r) {
 			Main.getInstance().getToMonitor().add(this);
-			setName(getWrapperName()+"::"+activeAddressBean.getVirtualSensorName());
+			setName(getWrapperName() + "::" + activeAddressBean.getVirtualSensorName());
 		}
 		return r;
 	}
@@ -455,7 +504,7 @@ public abstract class AbstractWrapper extends Thread implements Monitorable {
 	 */
 
 	public abstract boolean initialize();
-	
+
 	public abstract void dispose();
 
 	public abstract String getWrapperName();
@@ -485,18 +534,18 @@ public abstract class AbstractWrapper extends Thread implements Monitorable {
 	 * [stream elements] with the same timestamp. If this is false, then all the
 	 * stream elements with the same timestamp will be accepted. If this method
 	 * returns true (default value), duplicates are discarded and only the first
-	 *  one is kept.
+	 * one is kept.
 	 */
 	public boolean isTimeStampUnique() {
 		return true;
 	}
-	
+
 	/**
 	 * Allows for having partial ordering by only checking the time stamp order of
 	 * stream elements having the same key.
 	 * null is total ordering should be applied
 	 */
-	public String getPartialOrdersKey(){
+	public String getPartialOrdersKey() {
 		return activeAddressBean.getPartialOrderKey();
 	}
 
@@ -504,11 +553,24 @@ public abstract class AbstractWrapper extends Thread implements Monitorable {
 		throw new RuntimeException(
 				"Manual data insertion is not supported by this wrapper");
 	}
-	
-	public Hashtable<String, Object> getStatistics(){
+
+	/**
+	 * Retrieves the statistics of the wrapper.
+	 * The statistics include the out-of-order counter and the produced counter for
+	 * the active virtual sensor and input stream.
+	 * 
+	 * @return a Hashtable containing the statistics
+	 */
+	public Hashtable<String, Object> getStatistics() {
 		Hashtable<String, Object> stat = new Hashtable<String, Object>();
-		stat.put("vs."+activeAddressBean.getVirtualSensorName().replaceAll("\\.", "_")+".input."+ activeAddressBean.getInputStreamName().replaceAll("\\.", "_") +".outOfOrder.counter", oooCount);
-		stat.put("vs."+activeAddressBean.getVirtualSensorName().replaceAll("\\.", "_")+".input."+ activeAddressBean.getInputStreamName().replaceAll("\\.", "_") +".produced.counter", elementCount);
+		stat.put(
+				"vs." + activeAddressBean.getVirtualSensorName().replaceAll("\\.", "_") + ".input."
+						+ activeAddressBean.getInputStreamName().replaceAll("\\.", "_") + ".outOfOrder.counter",
+				oooCount);
+		stat.put(
+				"vs." + activeAddressBean.getVirtualSensorName().replaceAll("\\.", "_") + ".input."
+						+ activeAddressBean.getInputStreamName().replaceAll("\\.", "_") + ".produced.counter",
+				elementCount);
 		return stat;
 	}
 
@@ -521,13 +583,14 @@ public abstract class AbstractWrapper extends Thread implements Monitorable {
 	}
 
 	protected boolean inputEvent(long timestamp, String sourcename, long volume) {
-		if (!activeAddressBean.getVirtualSensorConfig().isProducingStatistics()){
+		if (!activeAddressBean.getVirtualSensorConfig().isProducingStatistics()) {
 			return false;
 		}
-			
-		StatisticsElement statisticsElement = new StatisticsElement(timestamp, sourcename, getActiveAddressBean().getInputStreamName(), volume);
-		return StatisticsHandler.getInstance().inputEvent(getActiveAddressBean().getVirtualSensorName(), statisticsElement);
+
+		StatisticsElement statisticsElement = new StatisticsElement(timestamp, sourcename,
+				getActiveAddressBean().getInputStreamName(), volume);
+		return StatisticsHandler.getInstance().inputEvent(getActiveAddressBean().getVirtualSensorName(),
+				statisticsElement);
 	}
-	
-	
+
 }

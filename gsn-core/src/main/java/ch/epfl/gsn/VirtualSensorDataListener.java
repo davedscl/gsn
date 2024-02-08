@@ -29,5 +29,5 @@ import ch.epfl.gsn.beans.StreamElement;
 import ch.epfl.gsn.beans.VSensorConfig;
 
 public interface VirtualSensorDataListener {
-	public void consume(StreamElement se,VSensorConfig config);
+	public void consume(StreamElement se, VSensorConfig config);
 }

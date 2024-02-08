@@ -99,8 +99,11 @@ public class User extends AppModel implements Subject {
 	}
 
 	public boolean hasAccessTo(DataSource ds, Boolean toWrite){
-		if(toWrite && null != UserDataSourceWrite.findByBoth(this, ds)) return true;
-		else if (!toWrite && null != UserDataSourceRead.findByBoth(this, ds)) return true;
+		if(toWrite && null != UserDataSourceWrite.findByBoth(this, ds)){
+			return true;
+		} else if (!toWrite && null != UserDataSourceRead.findByBoth(this, ds)){
+			return true;
+		} 
 		return false;
 	}
 

@@ -36,56 +36,72 @@ import java.util.Vector;
 import java.util.Map.Entry;
 
 import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 import ch.epfl.gsn.beans.StreamElement;
 import ch.epfl.gsn.beans.VSensorConfig;
-import ch.epfl.gsn.vsensor.AbstractVirtualSensor;
-import ch.epfl.gsn.vsensor.StreamRRDExporterVirtualSensor;
 
-import org.slf4j.Logger;
+
 
 public class StreamRRDExporterVirtualSensor extends AbstractVirtualSensor {
-	public static final String            PARAM_RRDFILE    = "rrdfile" ;
+	public static final String PARAM_RRDFILE = "rrdfile";
 
-	public static final String            PARAM_FIELD    = "field" ;
+	public static final String PARAM_FIELD = "field";
 
-	private static final transient Logger logger        = LoggerFactory.getLogger(StreamRRDExporterVirtualSensor.class );
+	private static final transient Logger logger = LoggerFactory.getLogger(StreamRRDExporterVirtualSensor.class);
 
 	private String rrdfile = null;
 
 	private Vector<String> fields = new Vector<String>();
 
-	public boolean initialize ( ) {
-		VSensorConfig vsensor = getVirtualSensorConfiguration( );
-		TreeMap < String , String > params = vsensor.getMainClassInitialParams( );
+	/**
+	 * Initializes the virtual sensor by setting its configuration parameters from
+	 * the Virtual
+	 * Sensor Configuration and performing necessary checks and operations.
+	 *
+	 * @return True if the initialization is successful, false otherwise.
+	 */
+	public boolean initialize() {
+		VSensorConfig vsensor = getVirtualSensorConfiguration();
+		TreeMap<String, String> params = vsensor.getMainClassInitialParams();
 		Set<Entry<String, String>> entrySet = params.entrySet();
 		Iterator it = entrySet.iterator();
-		while(it.hasNext()){
+		while (it.hasNext()) {
 			Entry entry = (Entry) it.next();
 			String key = (String) entry.getKey();
 			String value = (String) entry.getValue();
-			if(key.equals(PARAM_RRDFILE)){
-				this.rrdfile=value;
-			} else if (key.equals(PARAM_FIELD)){
+			if (key.equals(PARAM_RRDFILE)) {
+				this.rrdfile = value;
+			} else if (key.equals(PARAM_FIELD)) {
 				this.fields.add(value);
-			}	
+			}
 		}
-		if ( rrdfile == null) {
-			logger.debug("Initialization Parameter "+PARAM_RRDFILE+" is missing!" );
+		if (rrdfile == null) {
+			if(logger.isDebugEnabled()){
+				logger.debug("Initialization Parameter " + PARAM_RRDFILE + " is missing!");
+			}
 			return false;
 		}
-		logger.debug( "rrdfile=" + this.rrdfile);
+		if(logger.isDebugEnabled()){
+			logger.debug("rrdfile=" + this.rrdfile);
+		}
 		if (ensureFileExistence(rrdfile)) {
 			return true;
-		} else{
+		} else {
 			return createRRDFile();
-		} 
+		}
 	}
 
+	/**
+	 * Creates an RRD (Round Robin Database) file using the rrdtool command-line
+	 * tool.
+	 *
+	 * @return True if the RRD file creation is successful, false otherwise.
+	 */
 	private boolean createRRDFile() {
-		String command = "rrdtool create "+rrdfile+" --step 300 ";
-		for(int i=0;i<this.fields.size();i++){
-			command = command + "DS:field"+i+":GAUGE:600:0:U ";
+		String command = "rrdtool create " + rrdfile + " --step 300 ";
+		for (int i = 0; i < this.fields.size(); i++) {
+			command = command + "DS:field" + i + ":GAUGE:600:0:U ";
 		}
 		command = command + "RRA:AVERAGE:0.5:1:600 ";
 		command = command + "RRA:AVERAGE:0.5:6:700 ";
@@ -97,73 +113,99 @@ public class StreamRRDExporterVirtualSensor extends AbstractVirtualSensor {
 		command = command + "RRA:MAX:0.5:288:797";
 		Runtime runtime = Runtime.getRuntime();
 		try {
-			logger.debug( "The used rrdtool create command is: " + command);                        
+			if(logger.isDebugEnabled()){
+				logger.debug("The used rrdtool create command is: " + command);
+			}
 			Process process = runtime.exec(command);
-			logger.debug( "The exit value of the rrdtool create command is: " +
-						process.exitValue());
+			if(logger.isDebugEnabled()){
+				logger.debug("The exit value of the rrdtool create command is: " +
+					process.exitValue());
+			}
 			return true;
 		} catch (IOException e) {
-			logger.debug("An IOException has occured: "+e);
+			if(logger.isDebugEnabled()){
+				logger.debug("An IOException has occured: " + e);
+			}
 			return false;
-		} 
+		}
 	}
 
-
-	public void dataAvailable ( String inputStreamName , StreamElement streamElement ) {
-		ensureFileExistence( );
-		exportValues( streamElement );
-	}
-
-
-	/*
-     returns true if the requested file exists.
-	 * @param filename The file name to check for.
+	/**
+	 * Called when new data is available in the input stream.
+	 * Ensures the existence of the RRD file and exports the values from the stream
+	 * element.
+	 *
+	 * @param inputStreamName The name of the input stream.
+	 * @param streamElement   The data element from the stream.
 	 */
-	private boolean ensureFileExistence ( ) {
+	public void dataAvailable(String inputStreamName, StreamElement streamElement) {
+		ensureFileExistence();
+		exportValues(streamElement);
+	}
+
+	/**
+	 * Ensures the existence of the RRD file by checking if it exists.
+	 *
+	 * @return True if the RRD file exists, false otherwise.
+	 */
+	private boolean ensureFileExistence() {
 		return ensureFileExistence(this.rrdfile);
 	}
 
-	/*
-     returns true if the requested file exists.
-	 * @param filename The file name to check for.
+	/**
+	 * Ensures the existence of the requested file by checking if it exists.
+	 *
+	 * @param filename The name of the file to check for existence.
+	 * @return True if the file exists, false otherwise.
 	 */
-	private boolean ensureFileExistence ( String filename ) {
+	private boolean ensureFileExistence(String filename) {
 		File file = new File(rrdfile);
 		if (file.exists()) {
 			return true;
 		} else {
-			logger.error("rrdfile "+rrdfile+" does not exist!");
+			logger.error("rrdfile " + rrdfile + " does not exist!");
 			return false;
 		}
 	}
 
-
-	/*
-	 * Export all received values from a stream to the proposed table name into
+	/**
+	 * Exports values from a StreamElement to the proposed table name into
 	 * the database selected by the currently open connection.
+	 *
+	 * @param streamElement The StreamElement object containing the data to be
+	 *                      exported.
 	 */
-
-	private void exportValues ( StreamElement streamElement ) {
-		logger.debug( "Trying to add new data items to the rrdfile:" + this.rrdfile );
-		String command ="rrdtool update "+rrdfile+" N";
+	private void exportValues(StreamElement streamElement) {
+		if(logger.isDebugEnabled()){
+			logger.debug("Trying to add new data items to the rrdfile:" + this.rrdfile);
+		}
+		String command = "rrdtool update " + rrdfile + " N";
 		Serializable[] stream = streamElement.getData();
 		String field;
-		for(int i=0;i<stream.length;i++){
+		for (int i = 0; i < stream.length; i++) {
 			field = stream[i].toString();
 			// if the field is empty we have to add an U for unknown to the rrdfile
-			if(field==null || field.equals("")) {field = "U";}
-			command = command+":"+field;
+			if (field == null || field.equals("")) {
+				field = "U";
+			}
+			command = command + ":" + field;
 		}
 		Runtime runtime = Runtime.getRuntime();
 		try {
-			logger.debug( "The used rrdtool update command is: " + command);                        
+			if(logger.isDebugEnabled()){
+				logger.debug("The used rrdtool update command is: " + command);
+			}
 			Process process = runtime.exec(command);
-			logger.debug( "The processing did not generate an error!");                        
+			if(logger.isDebugEnabled()){
+				logger.debug("The processing did not generate an error!");
+			}
 		} catch (IOException e) {
-			logger.debug("An IOException has occured: "+e);
-		} 
+			if(logger.isDebugEnabled()){
+				logger.debug("An IOException has occured: " + e);
+			}
+		}
 	}
 
-	public void dispose ( ) {
+	public void dispose() {
 	}
 }

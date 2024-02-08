@@ -34,45 +34,68 @@ import ch.epfl.gsn.Main;
 import ch.epfl.gsn.VSensorStateChangeListener;
 import ch.epfl.gsn.beans.VSensorConfig;
 import ch.epfl.gsn.storage.SQLValidator;
-import ch.epfl.gsn.storage.StorageManager;
-import ch.epfl.gsn.vsensor.SQLValidatorIntegration;
 
 import org.slf4j.Logger;
 
-public class SQLValidatorIntegration implements VSensorStateChangeListener{
-	
+public class SQLValidatorIntegration implements VSensorStateChangeListener {
+
 	private SQLValidator validator;
-	
+
+	/**
+	 * Constructor for SQLValidatorIntegration.
+	 * Initializes the SQLValidator instance.
+	 * 
+	 * @param validator The SQLValidator instance to use for validation.
+	 */
 	public SQLValidatorIntegration(SQLValidator validator) throws SQLException {
 		this.validator = validator;
 	}
-	
 
 	private static final transient Logger logger = LoggerFactory.getLogger(SQLValidatorIntegration.class);
 
+	/**
+	 * Validates the SQL for creating the table for the given virtual sensor
+	 * config when the virtual sensor is loading.
+	 *
+	 * @param config The virtual sensor config.
+	 * @return True if the SQL executed successfully, false otherwise.
+	 */
 	public boolean vsLoading(VSensorConfig config) {
 		try {
-            String ddl = Main.getValidationStorage().getStatementCreateTable(config.getName(), config.getOutputStructure(), validator.getSampleConnection()).toString();
+			String ddl = Main.getValidationStorage().getStatementCreateTable(config.getName(),
+					config.getOutputStructure(), validator.getSampleConnection()).toString();
 			validator.executeDDL(ddl);
-		}catch (Exception e) {
-			logger.error(e.getMessage(),e);
+		} catch (Exception e) {
+			logger.error(e.getMessage(), e);
 		}
 		return true;
 	}
 
+	/**
+	 * Drops the table for the given virtual sensor config when the
+	 * virtual sensor is unloading.
+	 * 
+	 * @param config The virtual sensor config to drop the table for.
+	 * @return True if the drop table SQL executed successfully, false otherwise.
+	 */
 	public boolean vsUnLoading(VSensorConfig config) {
 		try {
-			String ddl = Main.getValidationStorage().getStatementDropTable(config.getName(), validator.getSampleConnection()).toString();
+			String ddl = Main.getValidationStorage()
+					.getStatementDropTable(config.getName(), validator.getSampleConnection()).toString();
 			validator.executeDDL(ddl);
-		}catch (Exception e) {
-			logger.error(e.getMessage(),e);
+		} catch (Exception e) {
+			logger.error(e.getMessage(), e);
 			return false;
 		}
 		return true;
 	}
 
+	/**
+	 * Releases resources used by the SQLValidator.
+	 * Should be called when the SQLValidatorIntegration is no longer needed.
+	 */
 	public void release() throws Exception {
 		validator.release();
-		
+
 	}
 }

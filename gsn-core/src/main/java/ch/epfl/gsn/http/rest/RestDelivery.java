@@ -23,21 +23,24 @@ public class RestDelivery implements DeliverySystem {
     private ObjectOutputStream objectStream;
     private Integer limit = null;
 
-    private static final StreamElement keepAliveMsg = new StreamElement(new DataField[]{new DataField("keepalive", "string")}, new Serializable[]{"keep-alive message"});
+    private static final StreamElement keepAliveMsg = new StreamElement(
+            new DataField[] { new DataField("keepalive", "string") }, new Serializable[] { "keep-alive message" });
 
     public RestDelivery(Continuation connection, String remoteHost) throws IOException {
         this.continuation = connection;
         this.remoteHost = remoteHost;
         XStream dataStream = StreamElement4Rest.getXstream();
-        objectStream = dataStream.createObjectOutputStream((new WriterOutputStream(continuation.getServletResponse().getWriter())));
+        objectStream = dataStream
+                .createObjectOutputStream((new WriterOutputStream(continuation.getServletResponse().getWriter())));
     }
-    
+
     public RestDelivery(Continuation connection, String remoteHost, Integer limit) throws IOException {
         this.continuation = connection;
         this.remoteHost = remoteHost;
-    	this.limit = limit;
+        this.limit = limit;
         XStream dataStream = StreamElement4Rest.getXstream();
-        objectStream = dataStream.createObjectOutputStream((new WriterOutputStream(continuation.getServletResponse().getWriter())));
+        objectStream = dataStream
+                .createObjectOutputStream((new WriterOutputStream(continuation.getServletResponse().getWriter())));
     }
 
     private static transient Logger logger = LoggerFactory.getLogger(RestDelivery.class);
@@ -53,35 +56,41 @@ public class RestDelivery implements DeliverySystem {
             objectStream.writeObject(new StreamElement4Rest(se));
             objectStream.flush();
             continuation.resume();
-            if (limit != null){
+            if (limit != null) {
                 limit--;
             }
-            	
+
             return ((LinkedBlockingQueue<Boolean>) continuation.getAttribute("status")).take();
         } catch (Exception e) {
-            logger.debug(e.getMessage(), e);
+            if(logger.isDebugEnabled()){
+                logger.debug(e.getMessage(), e);
+            }
             return false;
         }
     }
 
     public boolean writeKeepAliveStreamElement() {
-        logger.debug("Sending the keepalive message.");
+        if(logger.isDebugEnabled()){
+            logger.debug("Sending the keepalive message.");
+        }
         keepAliveMsg.setTimeStamp(System.currentTimeMillis());
-        if (limit != null){
+        if (limit != null) {
             limit++;
         }
-        	
+
         return writeStreamElement(keepAliveMsg);
     }
 
     public void close() {
         try {
-            if (objectStream != null){
+            if (objectStream != null) {
                 objectStream.close();
                 continuation.complete();
             }
         } catch (Exception e) {
-            logger.debug(e.getMessage(), e);
+            if(logger.isDebugEnabled()){
+                logger.debug(e.getMessage(), e);
+            }
         }
     }
 
@@ -96,23 +105,22 @@ public class RestDelivery implements DeliverySystem {
             return true;
         }
 
-
     }
 
-	@Override
-	public void setTimeout(long timeoutMs) {
-		continuation.setTimeout(timeoutMs);
-	}
+    @Override
+    public void setTimeout(long timeoutMs) {
+        continuation.setTimeout(timeoutMs);
+    }
 
-	public boolean isLimitReached() {
-		if (limit != null && limit <= 0){
+    public boolean isLimitReached() {
+        if (limit != null && limit <= 0) {
             return true;
         }
-		return false;
-	}
+        return false;
+    }
 
-	@Override
-	public String getUser() {
-		return remoteHost;
-	}
+    @Override
+    public String getUser() {
+        return remoteHost;
+    }
 }

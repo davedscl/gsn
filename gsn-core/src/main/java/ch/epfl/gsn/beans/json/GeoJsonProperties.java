@@ -1,6 +1,5 @@
 package ch.epfl.gsn.beans.json;
 
-
 import java.io.Serializable;
 
 public class GeoJsonProperties {

@@ -30,23 +30,23 @@ import ch.epfl.gsn.beans.StreamSource;
 
 public abstract class QueryRewriter {
 	protected StreamSource streamSource;
-	
-	public QueryRewriter(){
-		
+
+	public QueryRewriter() {
+
 	}
-	
-	public QueryRewriter(StreamSource streamSource){
+
+	public QueryRewriter(StreamSource streamSource) {
 		setStreamSource(streamSource);
 	}
-	
+
 	public abstract boolean initialize();
-	
+
 	public abstract StringBuilder rewrite(String query);
-	
+
 	public abstract void dispose();
 
 	public abstract boolean dataAvailable(long timestamp);
-	
+
 	public StreamSource getStreamSource() {
 		return streamSource;
 	}
@@ -55,6 +55,5 @@ public abstract class QueryRewriter {
 		this.streamSource = streamSource;
 		streamSource.setQueryRewriter(this);
 	}
-
 
 }

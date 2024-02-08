@@ -37,78 +37,98 @@ import ch.epfl.gsn.beans.DataField;
 import ch.epfl.gsn.beans.DataTypes;
 import ch.epfl.gsn.beans.StreamElement;
 import ch.epfl.gsn.utils.ParamParser;
-import ch.epfl.gsn.wrappers.AbstractWrapper;
-import ch.epfl.gsn.wrappers.MemoryMonitoringWrapper;
 
 import org.slf4j.Logger;
 
 public class MemoryMonitoringWrapper extends AbstractWrapper {
-   
-   private static final int          DEFAULT_SAMPLING_RATE                 = 1000;
-   
-   private int                       samplingRate                          = DEFAULT_SAMPLING_RATE;
-   
-   private final transient Logger    logger                                = LoggerFactory.getLogger( MemoryMonitoringWrapper.class );
-   
-   private static int                threadCounter                         = 0;
-   
-   private transient DataField [ ]   outputStructureCache                  = new DataField [ ] { new DataField( FIELD_NAME_HEAP , "bigint" , "Heap memory usage." ) ,
-         new DataField( FIELD_NAME_NON_HEAP , "bigint" , "Nonheap memory usage." ) , new DataField( FIELD_NAME_PENDING_FINALIZATION_COUNT , "int" , "The number of objects with pending finalization." ) };
-   
-   private static final String       FIELD_NAME_HEAP                       = "HEAP";
-   
-   private static final String       FIELD_NAME_NON_HEAP                   = "NON_HEAP";
-   
-   private static final String       FIELD_NAME_PENDING_FINALIZATION_COUNT = "PENDING_FINALIZATION_COUNT";
-   
-   private static final String [ ]   FIELD_NAMES                           = new String [ ] { FIELD_NAME_HEAP , FIELD_NAME_NON_HEAP , FIELD_NAME_PENDING_FINALIZATION_COUNT };
-   
-   private static final MemoryMXBean mbean                                 = ManagementFactory.getMemoryMXBean( );
-   
-   public boolean initialize ( ) {
-      AddressBean addressBean = getActiveAddressBean( );
-      if ( addressBean.getPredicateValue( "sampling-rate" ) != null ) {
-         samplingRate = ParamParser.getInteger( addressBean.getPredicateValue( "sampling-rate" ) , DEFAULT_SAMPLING_RATE );
-         if ( samplingRate <= 0 ) {
-            logger.warn( "The specified >sampling-rate< parameter for the >MemoryMonitoringWrapper< should be a positive number.\nGSN uses the default rate (" + DEFAULT_SAMPLING_RATE + "ms )." );
+
+   private static final int DEFAULT_SAMPLING_RATE = 1000;
+
+   private int samplingRate = DEFAULT_SAMPLING_RATE;
+
+   private final transient Logger logger = LoggerFactory.getLogger(MemoryMonitoringWrapper.class);
+
+   private static int threadCounter = 0;
+
+   private transient DataField[] outputStructureCache = new DataField[] {
+         new DataField(FIELD_NAME_HEAP, "bigint", "Heap memory usage."),
+         new DataField(FIELD_NAME_NON_HEAP, "bigint", "Nonheap memory usage."), new DataField(
+               FIELD_NAME_PENDING_FINALIZATION_COUNT, "int", "The number of objects with pending finalization.") };
+
+   private static final String FIELD_NAME_HEAP = "HEAP";
+
+   private static final String FIELD_NAME_NON_HEAP = "NON_HEAP";
+
+   private static final String FIELD_NAME_PENDING_FINALIZATION_COUNT = "PENDING_FINALIZATION_COUNT";
+
+   private static final String[] FIELD_NAMES = new String[] { FIELD_NAME_HEAP, FIELD_NAME_NON_HEAP,
+         FIELD_NAME_PENDING_FINALIZATION_COUNT };
+
+   private static final MemoryMXBean mbean = ManagementFactory.getMemoryMXBean();
+
+   /**
+    * Initializes the MemoryMonitoringWrapper.
+    * Retrieves the sampling rate from the active address bean and sets it as the
+    * sampling rate for the wrapper.
+    * If the sampling rate is not specified or is not a positive number, the
+    * default sampling rate is used.
+    * 
+    * @return true if the initialization is successful, false otherwise.
+    */
+   public boolean initialize() {
+      AddressBean addressBean = getActiveAddressBean();
+      if (addressBean.getPredicateValue("sampling-rate") != null) {
+         samplingRate = ParamParser.getInteger(addressBean.getPredicateValue("sampling-rate"), DEFAULT_SAMPLING_RATE);
+         if (samplingRate <= 0) {
+            logger.warn(
+                  "The specified >sampling-rate< parameter for the >MemoryMonitoringWrapper< should be a positive number.\nGSN uses the default rate ("
+                        + DEFAULT_SAMPLING_RATE + "ms ).");
             samplingRate = DEFAULT_SAMPLING_RATE;
          }
       }
       return true;
    }
-   
-   public void run ( ) {
-      while ( isActive( ) ) {
+
+   /**
+    * Executes the memory monitoring process in a loop until the wrapper is active.
+    * It periodically collects memory usage information and posts it as a stream
+    * element.
+    */
+   public void run() {
+      while (isActive()) {
          try {
-            Thread.sleep( samplingRate );
-         } catch ( InterruptedException e ) {
-            logger.error( e.getMessage( ) , e );
+            Thread.sleep(samplingRate);
+         } catch (InterruptedException e) {
+            logger.error(e.getMessage(), e);
          }
-         long heapMemoryUsage = mbean.getHeapMemoryUsage( ).getUsed( );
-         long nonHeapMemoryUsage = mbean.getNonHeapMemoryUsage( ).getUsed( );
-         int pendingFinalizationCount = mbean.getObjectPendingFinalizationCount( );
-         
-         StreamElement streamElement = new StreamElement( FIELD_NAMES , new Byte [ ] { DataTypes.BIGINT , DataTypes.BIGINT , DataTypes.INTEGER } , new Serializable [ ] { heapMemoryUsage ,
-               nonHeapMemoryUsage , pendingFinalizationCount } , System.currentTimeMillis( ) );
-         postStreamElement( streamElement );
+         long heapMemoryUsage = mbean.getHeapMemoryUsage().getUsed();
+         long nonHeapMemoryUsage = mbean.getNonHeapMemoryUsage().getUsed();
+         int pendingFinalizationCount = mbean.getObjectPendingFinalizationCount();
+
+         StreamElement streamElement = new StreamElement(FIELD_NAMES,
+               new Byte[] { DataTypes.BIGINT, DataTypes.BIGINT, DataTypes.INTEGER },
+               new Serializable[] { heapMemoryUsage,
+                     nonHeapMemoryUsage, pendingFinalizationCount },
+               System.currentTimeMillis());
+         postStreamElement(streamElement);
       }
    }
-   
-   public void dispose ( ) {
+
+   public void dispose() {
       threadCounter--;
    }
-   
+
    /**
     * The output fields exported by this virtual sensor.
     * 
     * @return The strutcture of the output.
     */
-   
-   public final DataField [ ] getOutputFormat ( ) {
+
+   public final DataField[] getOutputFormat() {
       return outputStructureCache;
    }
-   
-   public String getWrapperName ( ) {
+
+   public String getWrapperName() {
       return "System memory consumption usage";
    }
 }

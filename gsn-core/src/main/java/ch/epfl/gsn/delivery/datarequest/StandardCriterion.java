@@ -31,27 +31,24 @@ import java.util.Date;
 import java.util.Hashtable;
 
 import ch.epfl.gsn.Main;
-import ch.epfl.gsn.delivery.datarequest.AbstractCriterion;
-import ch.epfl.gsn.delivery.datarequest.DataRequestException;
-import ch.epfl.gsn.delivery.datarequest.StandardCriterion;
 
 public class StandardCriterion extends AbstractCriterion {
 
-	private static Hashtable<String, String> allowedOp 		= null;
-	private static Hashtable<String, String> allowedJoin 	= null;
-	private static Hashtable<String, String> allowedNeg 	= null;
+	private static Hashtable<String, String> allowedOp = null;
+	private static Hashtable<String, String> allowedJoin = null;
+	private static Hashtable<String, String> allowedNeg = null;
 
-	private String critJoin 	= null;
-	private String critNeg  	= null;
-	private String critField	= null;
-	private String critVsname	= null;
-	private String critValue	= null;
-	private String critOperator	= null;
-	
-	private static SimpleDateFormat sdf = new SimpleDateFormat (Main.getContainerConfig().getTimeFormat());
+	private String critJoin = null;
+	private String critNeg = null;
+	private String critField = null;
+	private String critVsname = null;
+	private String critValue = null;
+	private String critOperator = null;
+
+	private static SimpleDateFormat sdf = new SimpleDateFormat(Main.getContainerConfig().getTimeFormat());
 
 	static {
-		allowedOp = new Hashtable<String, String> () ;
+		allowedOp = new Hashtable<String, String>();
 		allowedOp.put("le", "<");
 		allowedOp.put("leq", "<=");
 		allowedOp.put("ge", ">");
@@ -59,16 +56,17 @@ public class StandardCriterion extends AbstractCriterion {
 		allowedOp.put("eq", " equal");
 		allowedOp.put("like", "like");
 		//
-		allowedJoin = new Hashtable<String, String> () ;
+		allowedJoin = new Hashtable<String, String>();
 		allowedJoin.put("or", "or");
 		allowedJoin.put("and", "and");
 		//
-		allowedNeg = new Hashtable<String, String> () ;
+		allowedNeg = new Hashtable<String, String>();
 		allowedNeg.put("", "");
 		allowedNeg.put("not", "not");
 	}
 
-    public StandardCriterion () {}
+	public StandardCriterion() {
+	}
 
 	/**
 	 * <p>
@@ -76,84 +74,136 @@ public class StandardCriterion extends AbstractCriterion {
 	 * The description must follow the syntax:<br />
 	 * <code><critJoin>:<negation>:<vsname>:<field>:<operator>:<value></code>.
 	 * 
-	 * Note that if <vsname> is blank then the criteria applies to the field of all virtual sensors.
+	 * Note that if <vsname> is blank then the criteria applies to the field of all
+	 * virtual sensors.
 	 * </p>
+	 * 
 	 * @param inlinecrits
 	 * @return
 	 */
-	public StandardCriterion (String inlinecrits) throws DataRequestException {
+	public StandardCriterion(String inlinecrits) throws DataRequestException {
 
 		String[] crits = inlinecrits.split(":");
 
-		if (crits.length != 6){ throw new DataRequestException (GENERAL_ERROR_MSG + " >" + inlinecrits + "<.") ;}
+		if (crits.length != 6) {
+			throw new DataRequestException(GENERAL_ERROR_MSG + " >" + inlinecrits + "<.");
+		}
 
-		critJoin 		= getCriterion(crits[0], allowedJoin);
-		critNeg			= getCriterion(crits[1], allowedNeg);
-		critVsname		= crits[2];
-		critField 		= crits[3];
-		critOperator	= getCriterion(crits[4], allowedOp);
-		critValue		= crits[5];
+		critJoin = getCriterion(crits[0], allowedJoin);
+		critNeg = getCriterion(crits[1], allowedNeg);
+		critVsname = crits[2];
+		critField = crits[3];
+		critOperator = getCriterion(crits[4], allowedOp);
+		critValue = crits[5];
 	}
-	
-	public String toString () {
-		String hrtf = critField.compareToIgnoreCase("timed") == 0 ? sdf.format(new Date (Long.parseLong(critValue))) : critValue;
+
+	public String toString() {
+		String hrtf = critField.compareToIgnoreCase("timed") == 0 ? sdf.format(new Date(Long.parseLong(critValue)))
+				: critValue;
 		return critJoin + " " + critNeg + " " + critVsname + " " + critField + " " + critOperator + " " + hrtf;
 	}
 
-	public String getCritJoin() { return this.critJoin; }
-	public String getNegation() { return this.critNeg; }
-	public String getVsname()	{ return this.critVsname; }
-	public String getField()    { return this.critField; }
-	public String getValue()    { return this.critValue; }
-	public String getOperator()	{ return this.critOperator; }
+	public String getCritJoin() {
+		return this.critJoin;
+	}
 
-    public void setCritJoin(String critJoin) {
-        this.critJoin = critJoin;
-    }
+	public String getNegation() {
+		return this.critNeg;
+	}
 
-    public void setCritNeg(String critNeg) {
-        this.critNeg = critNeg;
-    }
+	public String getVsname() {
+		return this.critVsname;
+	}
 
-    public void setCritField(String critField) {
-        this.critField = critField;
-    }
+	public String getField() {
+		return this.critField;
+	}
 
-    public void setCritVsname(String critVsname) {
-        this.critVsname = critVsname;
-    }
+	public String getValue() {
+		return this.critValue;
+	}
 
-    public void setCritValue(String critValue) {
-        this.critValue = critValue;
-    }
+	public String getOperator() {
+		return this.critOperator;
+	}
 
-    public void setCritOperator(String critOperator) {
-        this.critOperator = critOperator;
-    }
+	public void setCritJoin(String critJoin) {
+		this.critJoin = critJoin;
+	}
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o){ return true;}
-        if (o == null || getClass() != o.getClass()){ return false;}
+	public void setCritNeg(String critNeg) {
+		this.critNeg = critNeg;
+	}
 
-        StandardCriterion that = (StandardCriterion) o;
+	public void setCritField(String critField) {
+		this.critField = critField;
+	}
 
-        if (critField != null ? !critField.equals(that.critField) : that.critField != null){ return false;}
-        if (critJoin != null ? !critJoin.equals(that.critJoin) : that.critJoin != null) {return false;}
-        if (critNeg != null ? !critNeg.equals(that.critNeg) : that.critNeg != null) {return false;}
-        if (critOperator != null ? !critOperator.equals(that.critOperator) : that.critOperator != null){ return false;}
-        if (critVsname != null ? !critVsname.equals(that.critVsname) : that.critVsname != null){ return false;}
+	public void setCritVsname(String critVsname) {
+		this.critVsname = critVsname;
+	}
 
-        return true;
-    }
+	public void setCritValue(String critValue) {
+		this.critValue = critValue;
+	}
 
-    @Override
-    public int hashCode() {
-        int result = critJoin != null ? critJoin.hashCode() : 0;
-        result = 31 * result + (critNeg != null ? critNeg.hashCode() : 0);
-        result = 31 * result + (critField != null ? critField.hashCode() : 0);
-        result = 31 * result + (critVsname != null ? critVsname.hashCode() : 0);
-        result = 31 * result + (critOperator != null ? critOperator.hashCode() : 0);
-        return result;
-    }
+	public void setCritOperator(String critOperator) {
+		this.critOperator = critOperator;
+	}
+
+	/**
+	 * Compares this StandardCriterion object with another object for equality.
+	 * Two StandardCriterion objects are considered equal if their critField,
+	 * critJoin,
+	 * critNeg, critOperator, and critVsname fields are equal.
+	 *
+	 * @param o The object to compare with this StandardCriterion.
+	 * @return true if the objects are equal, false otherwise.
+	 */
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+
+		StandardCriterion that = (StandardCriterion) o;
+
+		if (critField == null ? that.critField != null : !critField.equals(that.critField)) {
+			return false;
+		}
+		if (critJoin == null ?  that.critJoin != null : !critJoin.equals(that.critJoin)) {
+			return false;
+		}
+		if (critNeg == null ?  that.critNeg != null : !critNeg.equals(that.critNeg)) {
+			return false;
+		}
+		if (critOperator == null ? that.critOperator != null :!critOperator.equals(that.critOperator)) {
+			return false;
+		}
+		if (critVsname == null ?  that.critVsname != null : !critVsname.equals(that.critVsname)) {
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Generates a hash code value for this StandardCriterion object.
+	 * The hash code is calculated based on the critJoin, critNeg, critField,
+	 * critVsname, and critOperator fields of the object.
+	 *
+	 * @return The hash code value for this StandardCriterion object.
+	 */
+	@Override
+	public int hashCode() {
+		int result = critJoin == null ? 0 : critJoin.hashCode();
+		result = 31 * result + (critNeg == null ? 0 : critNeg.hashCode());
+		result = 31 * result + (critField == null ? 0 : critField.hashCode());
+		result = 31 * result + (critVsname == null ? 0 : critVsname.hashCode());
+		result = 31 * result + (critOperator == null ? 0 : critOperator.hashCode());
+		return result;
+	}
 }

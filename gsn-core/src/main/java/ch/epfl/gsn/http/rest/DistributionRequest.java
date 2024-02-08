@@ -5,7 +5,7 @@ import ch.epfl.gsn.beans.VSensorConfig;
 
 public interface DistributionRequest {
 
-	public abstract boolean deliverStreamElement(StreamElement se);
+    public abstract boolean deliverStreamElement(StreamElement se);
 
     public boolean deliverKeepAliveMessage();
 

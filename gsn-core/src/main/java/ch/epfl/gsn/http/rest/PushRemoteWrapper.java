@@ -44,7 +44,7 @@ public class PushRemoteWrapper extends AbstractWrapper {
 
     private final XStream XSTREAM = StreamElement4Rest.getXstream();
 
-    private double uid = -1; //only set for push based delivery(default)
+    private double uid = -1; // only set for push based delivery(default)
 
     private RemoteWrapperParamParser initParams;
 
@@ -55,8 +55,6 @@ public class PushRemoteWrapper extends AbstractWrapper {
     private DataField[] structure;
 
     List<NameValuePair> postParameters;
-
-
 
     public void dispose() {
         NotificationRegistry.getInstance().removeNotification(uid);
@@ -70,18 +68,22 @@ public class PushRemoteWrapper extends AbstractWrapper {
 
             postParameters = new ArrayList<NameValuePair>();
             postParameters.add(new BasicNameValuePair(PushDelivery.NOTIFICATION_ID_KEY, Double.toString(uid)));
-            postParameters.add(new BasicNameValuePair(PushDelivery.LOCAL_CONTACT_POINT, initParams.getLocalContactPoint()));
+            postParameters
+                    .add(new BasicNameValuePair(PushDelivery.LOCAL_CONTACT_POINT, initParams.getLocalContactPoint()));
             // Init the http client
             if (initParams.isSSLRequired()) {
-                KeyStore trustStore  = KeyStore.getInstance(KeyStore.getDefaultType());
-                trustStore.load(new FileInputStream(new File("conf/servertestkeystore")), Main.getContainerConfig().getSSLKeyStorePassword().toCharArray());
+                KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
+                trustStore.load(new FileInputStream(new File("conf/servertestkeystore")),
+                        Main.getContainerConfig().getSSLKeyStorePassword().toCharArray());
                 SSLSocketFactory socketFactory = new SSLSocketFactory(trustStore);
                 socketFactory.setHostnameVerifier(SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
-                int sslPort = Main.getContainerConfig().getSSLPort() > 0 ? Main.getContainerConfig().getSSLPort() : ContainerConfig.DEFAULT_SSL_PORT;
+                int sslPort = Main.getContainerConfig().getSSLPort() > 0 ? Main.getContainerConfig().getSSLPort()
+                        : ContainerConfig.DEFAULT_SSL_PORT;
                 Scheme sch = new Scheme("https", socketFactory, sslPort);
                 httpclient.getConnectionManager().getSchemeRegistry().register(sch);
             }
-            Scheme plainsch = new Scheme("http", PlainSocketFactory.getSocketFactory(), Main.getContainerConfig().getContainerPort());
+            Scheme plainsch = new Scheme("http", PlainSocketFactory.getSocketFactory(),
+                    Main.getContainerConfig().getContainerPort());
             httpclient.getConnectionManager().getSchemeRegistry().register(plainsch);
             //
             lastReceivedTimestamp = initParams.getStartTime();
@@ -91,7 +93,6 @@ public class PushRemoteWrapper extends AbstractWrapper {
             NotificationRegistry.getInstance().removeNotification(uid);
             return false;
         }
-
 
         return true;
     }
@@ -128,15 +129,25 @@ public class PushRemoteWrapper extends AbstractWrapper {
                 int sc = response.getStatusLine().getStatusCode();
                 //
                 if (sc == HttpStatus.SC_OK) {
-                    logger.debug(new StringBuilder().append("Wants to consume the structure packet from ").append(initParams.getRemoteContactPoint()).toString());
+                    if(logger.isDebugEnabled()){
+                        logger.debug(new StringBuilder().append("Wants to consume the structure packet from ")
+                            .append(initParams.getRemoteContactPoint()).toString());
+                    }
                     structure = (DataField[]) XSTREAM.fromXML(response.getEntity().getContent());
-                    logger.debug("Connection established for: " + initParams.getRemoteContactPoint());
+                    if(logger.isDebugEnabled()){
+                        logger.debug("Connection established for: " + initParams.getRemoteContactPoint());
+                    }
                     break;
                 } else {
-                    if (sc == HttpStatus.SC_UNAUTHORIZED){
-                        authState = (AuthState) localContext.getAttribute(ClientContext.TARGET_AUTH_STATE); // Target host authentication required
+                    if (sc == HttpStatus.SC_UNAUTHORIZED) {
+                        authState = (AuthState) localContext.getAttribute(ClientContext.TARGET_AUTH_STATE); // Target
+                                                                                                            // host
+                                                                                                            // authentication
+                                                                                                            // required
                     } else if (sc == HttpStatus.SC_PROXY_AUTHENTICATION_REQUIRED) {
-                        authState = (AuthState) localContext.getAttribute(ClientContext.PROXY_AUTH_STATE); // Proxy authentication required
+                        authState = (AuthState) localContext.getAttribute(ClientContext.PROXY_AUTH_STATE); // Proxy
+                                                                                                           // authentication
+                                                                                                           // required
                     } else {
                         logger.error(new StringBuilder()
                                 .append("Unexpected POST status code returned: ")
@@ -146,45 +157,49 @@ public class PushRemoteWrapper extends AbstractWrapper {
                     }
                     if (authState != null) {
                         if (initParams.getUsername() == null || (tries > 1 && initParams.getUsername() != null)) {
-                            logger.error("A valid username/password required to connect to the remote host: " + initParams.getRemoteContactPoint());
+                            logger.error("A valid username/password required to connect to the remote host: "
+                                    + initParams.getRemoteContactPoint());
                         } else {
-                            
+
                             AuthScope authScope = authState.getAuthScope();
-                            logger.warn(new StringBuilder().append("Setting Credentials for host: ").append(authScope.getHost()).append(":").append(authScope.getPort()).toString());
-                            Credentials creds = new UsernamePasswordCredentials(initParams.getUsername(), initParams.getPassword());
+                            logger.warn(new StringBuilder().append("Setting Credentials for host: ")
+                                    .append(authScope.getHost()).append(":").append(authScope.getPort()).toString());
+                            Credentials creds = new UsernamePasswordCredentials(initParams.getUsername(),
+                                    initParams.getPassword());
                             httpclient.getCredentialsProvider().setCredentials(authScope, creds);
                         }
                     }
                 }
-            }
-            catch (RuntimeException ex) {
+            } catch (RuntimeException ex) {
                 // In case of an unexpected exception you may want to abort
                 // the HTTP request in order to shut down the underlying
                 // connection and release it back to the connection manager.
                 logger.warn("Aborting the HTTP POST request.");
                 httpPost.abort();
                 throw ex;
-            }
-            finally {
+            } finally {
                 if (response != null && response.getEntity() != null) {
                     response.getEntity().consumeContent();
                 }
             }
         }
-        
-        if (structure == null){
+
+        if (structure == null) {
             throw new RuntimeException("Cannot connect to the remote host.");
         }
         return structure;
     }
 
     public boolean manualDataInsertion(String Xstream4Rest) {
-        logger.debug(new StringBuilder().append("Received Stream Element at the push wrapper.").toString());
+        if(logger.isDebugEnabled()){
+            logger.debug(new StringBuilder().append("Received Stream Element at the push wrapper.").toString());
+        }
         StreamElement4Rest se = (StreamElement4Rest) XSTREAM.fromXML(Xstream4Rest);
         StreamElement streamElement = se.toStreamElement();
 
         try {
-            // If the stream element is out of order, we accept the stream element and wait for the next (update the last received time and return true)
+            // If the stream element is out of order, we accept the stream element and wait
+            // for the next (update the last received time and return true)
             if (isOutOfOrder(streamElement)) {
                 lastReceivedTimestamp = streamElement.getTimeStamp();
                 return true;
@@ -193,13 +208,12 @@ public class PushRemoteWrapper extends AbstractWrapper {
             // If the stream element was inserted succesfully, we wait for the next,
             // otherwise, we return false.
             boolean status = postStreamElement(streamElement);
-            if (status){
+            if (status) {
                 lastReceivedTimestamp = streamElement.getTimeStamp();
             }
-                
+
             return status;
-        }
-        catch (SQLException e) {
+        } catch (SQLException e) {
             logger.warn(e.getMessage(), e);
             return false;
         }
@@ -210,7 +224,7 @@ public class PushRemoteWrapper extends AbstractWrapper {
         //
         httpPost.getParams().setParameter(CoreProtocolPNames.USE_EXPECT_CONTINUE, Boolean.FALSE);
         //
-        HttpResponse response = null; //This is acting as keep alive.
+        HttpResponse response = null; // This is acting as keep alive.
         //
         while (isActive()) {
             try {
@@ -220,7 +234,8 @@ public class PushRemoteWrapper extends AbstractWrapper {
                 response = httpclient.execute(httpPost);
                 int status = response.getStatusLine().getStatusCode();
                 if (status != RestStreamHandler.SUCCESS_200) {
-                    logger.error("Cant register to the remote client, retrying in:" + (KEEP_ALIVE_PERIOD / 1000) + " seconds.");
+                    logger.error("Cant register to the remote client, retrying in:" + (KEEP_ALIVE_PERIOD / 1000)
+                            + " seconds.");
                     structure = registerAndGetStructure();
                 }
             } catch (Exception e) {

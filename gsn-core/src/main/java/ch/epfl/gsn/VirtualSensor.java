@@ -27,7 +27,6 @@ package ch.epfl.gsn;
 
 import org.slf4j.LoggerFactory;
 
-import ch.epfl.gsn.VirtualSensor;
 import ch.epfl.gsn.beans.InputStream;
 import ch.epfl.gsn.beans.StreamSource;
 import ch.epfl.gsn.beans.VSensorConfig;
@@ -56,6 +55,22 @@ public class VirtualSensor {
         this.lastModified = new File(config.getFileName()).lastModified();
     }
 
+    /**
+     * Borrows an instance of AbstractVirtualSensor, creating a new one if not
+     * already available.
+     *
+     * This method synchronizes the process of borrowing an AbstractVirtualSensor
+     * instance. If no instance is
+     * currently available, it attempts to create a new one by instantiating the
+     * processing class specified in the
+     * configuration. The new instance is then initialized, and if successful, it is
+     * stored for subsequent borrowings.
+     *
+     * @return An instance of AbstractVirtualSensor for processing.
+     * @throws VirtualSensorInitializationFailedException If an error occurs during
+     *                                                    instantiation or
+     *                                                    initialization.
+     */
     public synchronized AbstractVirtualSensor borrowVS() throws VirtualSensorInitializationFailedException {
         if (virtualSensor == null) {
             try {
@@ -68,7 +83,9 @@ public class VirtualSensor {
                 virtualSensor = null;
                 throw new VirtualSensorInitializationFailedException();
             }
-            logger.debug("Created a new instance for VS " + config.getName());
+            if(logger.isDebugEnabled()){
+                logger.debug("Created a new instance for VS " + config.getName());
+            }
         }
         return virtualSensor;
     }
@@ -79,35 +96,57 @@ public class VirtualSensor {
      * @param o
      */
     public synchronized void returnVS(AbstractVirtualSensor o) {
-        if (o == null) {return;}
-        if (++noOfCallsToReturnVS % GARBAGE_COLLECTOR_INTERVAL == 0){
+        if (o == null) {
+            return;
+        }
+        if (++noOfCallsToReturnVS % GARBAGE_COLLECTOR_INTERVAL == 0) {
             DoUselessDataRemoval();
         }
-            
+
     }
 
+    /**
+     * Closes the virtual sensor pool.
+     * If the virtual sensor is not null, it disposes the virtual sensor and logs a
+     * debug message indicating that the virtual sensor is released.
+     * If the virtual sensor is null, it logs a debug message indicating that the
+     * virtual sensor was already released.
+     */
     public synchronized void closePool() {
-        if (virtualSensor != null) {
-            virtualSensor.dispose_decorated();
-            logger.debug("VS " + config.getName() + " is now released.");
+        if (virtualSensor == null) {
+            if(logger.isDebugEnabled()){
+                logger.debug("VS " + config.getName() + " was already released.");
+            }       
         } else {
-            logger.debug("VS " + config.getName() + " was already released.");
+            virtualSensor.dispose_decorated();
+            if(logger.isDebugEnabled()){
+                logger.debug("VS " + config.getName() + " is now released.");
+            } 
         }
+
     }
 
+    /**
+     * Starts the virtual sensor by starting the wrapper threads and storing their
+     * ids and names in a HashMap for monitoring.
+     * 
+     * @throws VirtualSensorInitializationFailedException if the virtual sensor
+     *                                                    initialization fails.
+     */
     public void start() throws VirtualSensorInitializationFailedException {
-        
+
         /*
-         *  Starting wrapper threads and storing their ids and names in AbstractVirtualSensor's 
-         *  HashMap threads for monitoring
+         * Starting wrapper threads and storing their ids and names in
+         * AbstractVirtualSensor's
+         * HashMap threads for monitoring
          */
-        
-        Map <Long, String> threads = new HashMap <Long, String>();
+
+        Map<Long, String> threads = new HashMap<Long, String>();
         for (InputStream inputStream : config.getInputStreams()) {
             for (StreamSource streamSource : inputStream.getSources()) {
                 AbstractWrapper wrapper = streamSource.getWrapper();
                 wrapper.start();
-                threads.put(wrapper.getId(),wrapper.getName());
+                threads.put(wrapper.getId(), wrapper.getName());
             }
         }
         borrowVS();
@@ -132,26 +171,43 @@ public class VirtualSensor {
     public void dispose() {
     }
 
-    // apply the storage size parameter to the virtual sensor table
+    /**
+     * Removes useless data from the virtual sensor's storage based on the
+     * configured storage size.
+     * If the storage size is not set, no action is taken.
+     * The removal strategy is determined by the storage configuration: count-based
+     * or time-based.
+     * If count-based, the specified number of rows will be removed from the
+     * storage.
+     * If time-based, the data older than the specified time will be removed from
+     * the storage.
+     * The number of rows affected by the removal operation is logged.
+     */
     public void DoUselessDataRemoval() {
-        if (config.getParsedStorageSize() == VSensorConfig.STORAGE_SIZE_NOT_SET){ return;}
+        if (config.getParsedStorageSize() == VSensorConfig.STORAGE_SIZE_NOT_SET) {
+            return;
+        }
         StringBuilder query;
 
         if (config.isStorageCountBased()) {
-            query = Main.getStorage(config.getName()).getStatementRemoveUselessDataCountBased(config.getName(), config.getParsedStorageSize());
-        }
-        else {
-            query = Main.getStorage(config.getName()).getStatementRemoveUselessDataTimeBased(config.getName(), config.getParsedStorageSize());
+            query = Main.getStorage(config.getName()).getStatementRemoveUselessDataCountBased(config.getName(),
+                    config.getParsedStorageSize());
+        } else {
+            query = Main.getStorage(config.getName()).getStatementRemoveUselessDataTimeBased(config.getName(),
+                    config.getParsedStorageSize());
         }
 
         int effected = 0;
         try {
-            logger.debug("Enforcing the limit size on the VS table by : " + query);
+            if(logger.isDebugEnabled()){
+                logger.debug("Enforcing the limit size on the VS table by : " + query);
+            }
             effected = Main.getStorage(config.getName()).executeUpdate(query);
         } catch (SQLException e) {
-            logger.error("Error in executing: " + query + ". "+ e.getMessage());
+            logger.error("Error in executing: " + query + ". " + e.getMessage());
         }
-        logger.debug("There were " + effected + " old rows dropped from " + config.getName());
+        if(logger.isDebugEnabled()){
+            logger.debug("There were " + effected + " old rows dropped from " + config.getName());
+        }
     }
 }
-

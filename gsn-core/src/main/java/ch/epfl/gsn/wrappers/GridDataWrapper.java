@@ -30,8 +30,6 @@ import org.slf4j.LoggerFactory;
 import ch.epfl.gsn.beans.AddressBean;
 import ch.epfl.gsn.beans.DataField;
 import ch.epfl.gsn.beans.StreamElement;
-import ch.epfl.gsn.wrappers.AbstractWrapper;
-import ch.epfl.gsn.wrappers.GridDataWrapper;
 
 import org.slf4j.Logger;
 import org.joda.time.format.DateTimeFormat;
@@ -44,7 +42,6 @@ import java.util.List;
 import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 
 public class GridDataWrapper extends AbstractWrapper {
     private static final transient Logger logger = LoggerFactory.getLogger(GridDataWrapper.class);
@@ -62,12 +59,12 @@ public class GridDataWrapper extends AbstractWrapper {
     private static final String PARAM_EXTENSION = "extension";
     private static final String PARAM_RATE = "rate";
 
-    private static final String[] ESRI_Format = {"ncols",
+    private static final String[] ESRI_Format = { "ncols",
             "nrows",
             "xllcorner",
             "yllcorner",
             "cellsize",
-            "NODATA_value"};
+            "NODATA_value" };
 
     private String header[] = new String[6];
 
@@ -81,46 +78,57 @@ public class GridDataWrapper extends AbstractWrapper {
 
     private long rate;
 
+    /**
+     * Initializes the GridDataWrapper by retrieving the necessary configuration
+     * parameters from the AddressBean.
+     * 
+     * @return true if initialization is successful, false otherwise.
+     */
     public boolean initialize() {
 
         AddressBean addressBean = getActiveAddressBean();
 
         fileExtension = addressBean.getPredicateValue(PARAM_EXTENSION);
         if (fileExtension == null) {
-            logger.warn("The > " + PARAM_EXTENSION + " < parameter is missing from the wrapper for VS " + this.getActiveAddressBean().getVirtualSensorName());
+            logger.warn("The > " + PARAM_EXTENSION + " < parameter is missing from the wrapper for VS "
+                    + this.getActiveAddressBean().getVirtualSensorName());
             return false;
         }
 
         timeFormat = addressBean.getPredicateValue(PARAM_TIME_FORMAT);
         if (timeFormat == null) {
-            logger.warn("The > " + PARAM_TIME_FORMAT + " < parameter is missing from the wrapper for VS " + this.getActiveAddressBean().getVirtualSensorName());
+            logger.warn("The > " + PARAM_TIME_FORMAT + " < parameter is missing from the wrapper for VS "
+                    + this.getActiveAddressBean().getVirtualSensorName());
             return false;
         }
 
         fileMask = addressBean.getPredicateValue(PARAM_FILE_MASK);
         if (fileMask == null) {
-            logger.warn("The > " + PARAM_FILE_MASK + " < parameter is missing from the wrapper for VS " + this.getActiveAddressBean().getVirtualSensorName());
+            logger.warn("The > " + PARAM_FILE_MASK + " < parameter is missing from the wrapper for VS "
+                    + this.getActiveAddressBean().getVirtualSensorName());
             return false;
         }
 
         directory = addressBean.getPredicateValue(PARAM_DIRECTORY);
         if (directory == null) {
-            logger.warn("The > " + PARAM_DIRECTORY + " < parameter is missing from the wrapper for VS " + this.getActiveAddressBean().getVirtualSensorName());
+            logger.warn("The > " + PARAM_DIRECTORY + " < parameter is missing from the wrapper for VS "
+                    + this.getActiveAddressBean().getVirtualSensorName());
             return false;
         }
 
         String rateStr = addressBean.getPredicateValue(PARAM_RATE);
-        if (rateStr != null) {
-
+        if (rateStr == null) {
+            logger.warn("The > " + PARAM_RATE + " < parameter is missing from the wrapper in VS "
+                    + this.getActiveAddressBean().getVirtualSensorName());
+            return false;
+        } else {
             try {
                 rate = Integer.parseInt(rateStr);
             } catch (NumberFormatException e) {
-                logger.warn("The > " + PARAM_RATE + " < parameter is invalid for wrapper in VS " + this.getActiveAddressBean().getVirtualSensorName());
+                logger.warn("The > " + PARAM_RATE + " < parameter is invalid for wrapper in VS "
+                        + this.getActiveAddressBean().getVirtualSensorName());
                 return false;
             }
-        } else {
-            logger.warn("The > " + PARAM_RATE + " < parameter is missing from the wrapper in VS " + this.getActiveAddressBean().getVirtualSensorName());
-            return false;
         }
 
         latestProcessedTimestamp = -1;
@@ -129,16 +137,22 @@ public class GridDataWrapper extends AbstractWrapper {
     }
 
     public DataField[] getOutputFormat() {
-        return new DataField[]{
+        return new DataField[] {
                 new DataField("ncols", "int", "number of columns"),
                 new DataField("nrows", "int", "number of rows"),
                 new DataField("xllcorner", "double", "xll corner"),
                 new DataField("yllcorner", "double", "yll corner"),
                 new DataField("cellsize", "double", "cell size"),
                 new DataField("nodata_value", "double", "no data value"),
-                new DataField("grid", "binary:image/raw", "raw raster data")};
+                new DataField("grid", "binary:image/raw", "raw raster data") };
     }
 
+    /**
+     * Runs the GridDataWrapper thread.
+     * This method sleeps for 2000 milliseconds and then enters a loop that checks
+     * for new files in the specified directory
+     * at a specified rate. The loop continues until the thread is no longer active.
+     */
     public void run() {
         try {
             Thread.sleep(2000);
@@ -157,6 +171,13 @@ public class GridDataWrapper extends AbstractWrapper {
         }
     }
 
+    /**
+     * Parses a file and initializes the corresponding fields.
+     *
+     * @param fileName The name of the file to be parsed.
+     * @return {@code true} if the file is successfully parsed and data is
+     *         initialized, {@code false} otherwise.
+     */
     public boolean parseFile(String fileName) {
         boolean success = true;
         String line;
@@ -172,7 +193,7 @@ public class GridDataWrapper extends AbstractWrapper {
                 line = reader.readLine();
             }
 
-            //System.out.println(lines);
+            // System.out.println(lines);
 
         } catch (FileNotFoundException e) {
             success = false;
@@ -196,19 +217,25 @@ public class GridDataWrapper extends AbstractWrapper {
             // trim white spaces, replace tabs and multiple spaces with a single space
             for (int i = 0; i < lines.size(); i++) {
                 lines.set(i, lines.get(i).trim().replaceAll("[ \t]+", " "));
-                //System.out.println(lines.get(i));
+                // System.out.println(lines.get(i));
             }
 
-            logger.debug("size " + lines.size());
+            if(logger.isDebugEnabled()){
+                logger.debug("size " + lines.size());
+            }
 
             try {
                 for (int i = 0; i < 6; i++) {
                     String[] split = lines.get(i).split(" ");
 
                     header[i] = split[1];
-                    logger.debug(split[0] + " <=> " + ESRI_Format[i]);
+                    if(logger.isDebugEnabled()){
+                        logger.debug(split[0] + " <=> " + ESRI_Format[i]);
+                    }
                     if (!split[0].equals(ESRI_Format[i])) {
-                        logger.debug("=> inCorrect");
+                        if(logger.isDebugEnabled()){
+                            logger.debug("=> inCorrect");
+                        }
                         success = false;
                     }
                 }
@@ -225,16 +252,18 @@ public class GridDataWrapper extends AbstractWrapper {
                 yllcorner = Double.parseDouble(header[3]);
                 cellsize = Double.parseDouble(header[4]);
                 NODATA_value = Double.parseDouble(header[5]);
-
-                logger.debug("ncols " + ncols);
-                logger.debug("nrows " + nrows);
-                logger.debug("xllcorner " + xllcorner);
-                logger.debug("yllcorner " + yllcorner);
-                logger.debug("cellsize " + cellsize);
-                logger.debug("NODATA_value " + NODATA_value);
+                
+                if(logger.isDebugEnabled()){
+                    logger.debug("ncols " + ncols);
+                    logger.debug("nrows " + nrows);
+                    logger.debug("xllcorner " + xllcorner);
+                    logger.debug("yllcorner " + yllcorner);
+                    logger.debug("cellsize " + cellsize);
+                    logger.debug("NODATA_value " + NODATA_value);
+                }
             }
 
-            //parse raw data
+            // parse raw data
             if (success) {
                 List raw = new ArrayList<Double>();
 
@@ -244,39 +273,42 @@ public class GridDataWrapper extends AbstractWrapper {
 
                         try {
                             Double d = Double.parseDouble(aLine[j]);
-                            if (d != null){
-                                raw.add(d);
-                            } else {
+                            if (d == null) {
                                 raw.add(NODATA_value);
-                            }  
+                            } else {
+                                raw.add(d);
+                            }
                         } catch (java.lang.NumberFormatException e) {
                             logger.warn(j + ": \"" + aLine[j] + "\"");
                             logger.warn(e.getMessage());
                         }
-                        //System.out.println(i + "," + j + " : " + d);
+                        // System.out.println(i + "," + j + " : " + d);
                     }
 
                 }
-
-                logger.debug("Size of list => " + raw.size() + " ? " + ncols * nrows);
-                logger.debug(raw.toString());
+                
+                if(logger.isDebugEnabled()){
+                    logger.debug("Size of list => " + raw.size() + " ? " + ncols * nrows);
+                    logger.debug(raw.toString());
+                }
 
                 if (raw.size() == nrows * ncols) {
                     rawData = new Double[nrows][ncols];
-                    for (int i = 0; i < nrows; i++){
+                    for (int i = 0; i < nrows; i++) {
                         for (int j = 0; j < ncols; j++) {
                             rawData[i][j] = (Double) raw.get(i * ncols + j);
-                            //System.out.println(i + "," + j + " : " + rawData[i][j]);
+                            // System.out.println(i + "," + j + " : " + rawData[i][j]);
                         }
                     }
 
-                    logger.debug("rawData.length " + rawData.length);
-                    logger.debug("rawData[0].length " + rawData[0].length);
+                    if(logger.isDebugEnabled()){
+                        logger.debug("rawData.length " + rawData.length);
+                        logger.debug("rawData[0].length " + rawData[0].length);
+                    }
                 } else {
                     success = false;
                 }
             }
-
 
         }
 
@@ -287,6 +319,16 @@ public class GridDataWrapper extends AbstractWrapper {
         threadCounter--;
     }
 
+    /**
+     * Returns a vector of new files in the specified directory that match the given
+     * regular expression file mask.
+     *
+     * @param dir           The directory path to search for new files.
+     * @param regexFileMask The regular expression file mask to match against file
+     *                      names.
+     * @return A vector of new files that match the given regular expression file
+     *         mask.
+     */
     private Vector<String> listOfNewFiles(String dir, String regexFileMask) {
 
         File f = new File(dir);
@@ -295,12 +337,16 @@ public class GridDataWrapper extends AbstractWrapper {
         Arrays.sort(files);
 
         Vector<String> v = new Vector<String>();
-        logger.debug("*** found " + files.length + " files ***");
+        if(logger.isDebugEnabled()){
+            logger.debug("*** found " + files.length + " files ***");
+        }
         for (int i = 0; i < files.length; i++) {
             String file = files[i];
             Pattern pattern = Pattern.compile(regexFileMask);
             Matcher matcher = pattern.matcher(file);
-            logger.debug("(" + i + ") Testing... " + file);
+            if(logger.isDebugEnabled()){
+                logger.debug("(" + i + ") Testing... " + file);
+            }
             if (matcher.find()) {
                 String date = getTimeStampFromFileName(file, regexFileMask);
                 long epoch = strTime2Long(date, timeFormat);
@@ -318,10 +364,9 @@ public class GridDataWrapper extends AbstractWrapper {
     }
 
     /*
-    * Posting data to database
-    * */
+     * Posting data to database
+     */
     private boolean postData(String filePath, long timed) {
-
 
         parseFile(filePath);
 
@@ -348,10 +393,11 @@ public class GridDataWrapper extends AbstractWrapper {
             stream[5] = new Double(NODATA_value);
             stream[6] = bos.toByteArray();
 
-            logger.debug("size => " + bos.toByteArray().length);
+            if(logger.isDebugEnabled()){
+                logger.debug("size => " + bos.toByteArray().length);
+            }
 
-            //testDeserialize(bos.toByteArray());
-
+            // testDeserialize(bos.toByteArray());
 
         } catch (IOException e) {
             logger.warn(e.getMessage(), e);
@@ -368,8 +414,8 @@ public class GridDataWrapper extends AbstractWrapper {
     }
 
     /*
-    * Test deserialization
-    * */
+     * Test deserialization
+     */
     public static void testDeserialize(byte[] bytes) {
 
         try {
@@ -383,8 +429,10 @@ public class GridDataWrapper extends AbstractWrapper {
             deserial = (Double[][]) in.readObject();
             in.close();
 
-            logger.debug("deserial.length" + deserial.length);
-            logger.debug("deserial[0].length" + deserial[0].length);
+            if(logger.isDebugEnabled()){
+                logger.debug("deserial.length" + deserial.length);
+                logger.debug("deserial[0].length" + deserial[0].length);
+            }
 
             for (int i = 0; i < deserial.length; i++) {
                 StringBuilder sb = new StringBuilder();
@@ -405,6 +453,14 @@ public class GridDataWrapper extends AbstractWrapper {
         return "GridDataWrapper";
     }
 
+    /**
+     * Converts a string representation of time to a long value based on the
+     * specified time format.
+     *
+     * @param s          the string representation of time
+     * @param timeFormat the format of the time string
+     * @return the long value representing the time, or -1 if the conversion fails
+     */
     private long strTime2Long(String s, String timeFormat) {
 
         long l = -1;
@@ -417,15 +473,27 @@ public class GridDataWrapper extends AbstractWrapper {
         return l;
     }
 
+    /**
+     * Extracts the timestamp from a given file name using a regular expression
+     * mask.
+     *
+     * @param fileName  the name of the file
+     * @param regexMask the regular expression mask to match against the file name
+     * @return the extracted timestamp as a string, or null if no match is found
+     */
     private String getTimeStampFromFileName(String fileName, String regexMask) {
 
         Pattern pattern = Pattern.compile(regexMask);
         Matcher matcher = pattern.matcher(fileName);
         if (matcher.find()) {
-            logger.debug("Date => " + matcher.group(1));
+            if(logger.isDebugEnabled()){
+                logger.debug("Date => " + matcher.group(1));
+            }
             return matcher.group(1);
         } else {
-            logger.debug("Date => null");
+            if(logger.isDebugEnabled()){
+                logger.debug("Date => null");
+            }
             return null;
         }
     }

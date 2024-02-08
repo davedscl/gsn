@@ -30,9 +30,9 @@ import ch.epfl.gsn.beans.StreamElement;
 import ch.epfl.gsn.beans.StreamSource;
 
 public interface SlidingHandler {
-	
+
 	public void addStreamSource(StreamSource streamSource);
-	
+
 	public void removeStreamSource(StreamSource streamSource);
 
 	public boolean dataAvailable(StreamElement streamElement);
@@ -40,7 +40,7 @@ public interface SlidingHandler {
 	public boolean isInterestedIn(StreamSource streamSource);
 
 	public String getCuttingCondition();
-	
+
 	public void dispose();
 
 }

@@ -11,7 +11,7 @@ public interface DeliverySystem {
 
 	public abstract boolean writeStreamElement(StreamElement se);
 
-    public abstract boolean writeKeepAliveStreamElement();
+	public abstract boolean writeKeepAliveStreamElement();
 
 	public abstract void close();
 

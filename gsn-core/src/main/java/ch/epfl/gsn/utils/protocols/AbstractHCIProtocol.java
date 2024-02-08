@@ -26,8 +26,6 @@
 
 package ch.epfl.gsn.utils.protocols;
 
-
-
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Vector;
@@ -52,39 +50,63 @@ import org.slf4j.Logger;
  * class deals with state issues: for example, after sending
  * a query the protocol might require you not to send any
  * query before the end of a timer or the reception of an
- * answer from the mote, whichever comes first. 
+ * answer from the mote, whichever comes first.
+ * 
  * @see ProtocolManager
  * @see AbstractHCIQuery
  */
 public abstract class AbstractHCIProtocol {
-	private static final transient Logger logger = LoggerFactory.getLogger( AbstractHCIProtocol.class );
+	private static final transient Logger logger = LoggerFactory.getLogger(AbstractHCIProtocol.class);
 	private String protocolName;
 	private HashMap<String, AbstractHCIQuery> queries;
-	   
+
+	/**
+	 * Constructs a new instance of the AbstractHCIProtocol class with the specified
+	 * name.
+	 *
+	 * @param name the name of the protocol
+	 */
 	public AbstractHCIProtocol(String name) {
-		logger.debug("Initializing protocol " + name);
+		if(logger.isDebugEnabled()){
+			logger.debug("Initializing protocol " + name);
+		}
 		protocolName = name;
 		queries = new HashMap<String, AbstractHCIQuery>();
 	}
-	
+
+	/**
+	 * Adds a query to the protocol.
+	 *
+	 * @param query the query to be added
+	 */
 	protected void addQuery(AbstractHCIQuery query) {
 		queries.put(query.getName(), query);
-		logger.debug("added query: " + query.getName());
+		if(logger.isDebugEnabled()){
+			logger.debug("added query: " + query.getName());
+		}
 	}
-	
+
 	/*
-	 * Returns the complete list of all queries known 
+	 * Returns the complete list of all queries known
 	 * by this protocol.
 	 */
-	
+
 	public Collection<AbstractHCIQuery> getQueries() {
-		logger.debug("returning query values: " + queries.values());
+		if(logger.isDebugEnabled()){
+			logger.debug("returning query values: " + queries.values());
+		}
 		return queries.values();
 	}
-	
+
+	/**
+	 * Returns a collection of names associated with the queries in the protocol.
+	 *
+	 * @return a collection of names
+	 */
 	public Collection<String> getNames() {
 		return queries.keySet();
 	}
+
 	/*
 	 * Returns the name of the protocol represented
 	 * by this class.
@@ -93,27 +115,35 @@ public abstract class AbstractHCIProtocol {
 	public String getName() {
 		return protocolName;
 	}
-	
+
+	/**
+	 * Retrieves the query with the specified name from the collection of queries.
+	 *
+	 * @param queryName the name of the query to retrieve
+	 * @return the query with the specified name, or null if not found
+	 */
 	public AbstractHCIQuery getQuery(String queryName) {
-		for(String key: queries.keySet()){
-			if(key.equals(queryName)){
+		for (String key : queries.keySet()) {
+			if (key.equals(queryName)) {
 				return queries.get(key);
 			}
 		}
 		return null;
 	}
-   
+
 	/*
 	 * Returns null if the query does not exists, and the raw bytes
 	 * to send to the wrapper if the query has been found.
 	 */
 	public byte[] buildRawQuery(String queryName, Vector<Object> params) {
 		AbstractHCIQuery query = queries.get(queryName);
-		if (query == null){
+		if (query == null) {
 			return null;
 		} else {
-			logger.debug("Protocol " + getName() + " has built a raw query of type " + query.getName());
-			return query.buildRawQuery( params );
+			if(logger.isDebugEnabled()){
+				logger.debug("Protocol " + getName() + " has built a raw query of type " + query.getName());
+			}
+			return query.buildRawQuery(params);
 		}
 	}
 }

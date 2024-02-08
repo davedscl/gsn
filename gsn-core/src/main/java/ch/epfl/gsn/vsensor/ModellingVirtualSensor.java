@@ -30,79 +30,87 @@ import java.util.Comparator;
 import java.util.TreeMap;
 
 import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 import ch.epfl.gsn.beans.StreamElement;
 import ch.epfl.gsn.utils.models.AbstractModel;
-import ch.epfl.gsn.vsensor.AbstractVirtualSensor;
-import ch.epfl.gsn.vsensor.ModellingVirtualSensor;
 
-import org.slf4j.Logger;
 
 
 /**
- * This class is linked to an array of AbstractModels and keep them updated by pushing every StreamElement to them.
- * The model classes are defined by their class names separated by "," as a parameter of the VS.
- * If a model need some parameters before initializing, they can be specified in the VS parameters as "model.i.param",
- *  where i is the index of the model and param the parameter name.
+ * This class is linked to an array of AbstractModels and keeps them updated by
+ * pushing every StreamElement to them.
+ * The model classes are defined by their class names separated by "," as a
+ * parameter of the VS.
+ * If a model needs some parameters before initializing, they can be specified
+ * in
+ * the VS parameters as "model.i.param",
+ * where i is the index of the model and param the parameter name.
+ * 
  * @author jeberle
  *
  */
 public class ModellingVirtualSensor extends AbstractVirtualSensor {
-	
-	private static final transient Logger logger = LoggerFactory.getLogger(ModellingVirtualSensor.class);
-	
-	private static final String PARAM_MODEL_CLASS = "model";
-	private static final String PARAM_MODEL_PREFIX ="model";
-	
-	private String[] model;
-	
-	private AbstractModel[] am;
-	
 
+	private static final transient Logger logger = LoggerFactory.getLogger(ModellingVirtualSensor.class);
+
+	private static final String PARAM_MODEL_CLASS = "model";
+	private static final String PARAM_MODEL_PREFIX = "model";
+
+	private String[] model;
+
+	private AbstractModel[] am;
+
+	/**
+	 * Initializes the modeling virtual sensor by getting the model class names from
+	 * the parameters, instantiating the models, setting their parameters, output
+	 * structure and virtual sensor reference, and initializing them.
+	 * 
+	 * @return true if all models initialize successfully, false otherwise.
+	 */
 	@Override
 	public boolean initialize() {
 
-        TreeMap<String, String> params = getVirtualSensorConfiguration().getMainClassInitialParams();
+		TreeMap<String, String> params = getVirtualSensorConfiguration().getMainClassInitialParams();
 
-        //get all the models
-        String model_str = params.get(PARAM_MODEL_CLASS);
+		// get all the models
+		String model_str = params.get(PARAM_MODEL_CLASS);
 
-        if (model_str == null) {
-            logger.warn("Parameter \"" + PARAM_MODEL_CLASS + "\" not provided in Virtual Sensor file");
-            return false;
-        }
-        
-        model = model_str.trim().split(",");
-        
-        am = new AbstractModel[model.length];
-        
-        for(int i=0;i<model.length;i++){
+		if (model_str == null) {
+			logger.warn("Parameter \"" + PARAM_MODEL_CLASS + "\" not provided in Virtual Sensor file");
+			return false;
+		}
+
+		model = model_str.trim().split(",");
+
+		am = new AbstractModel[model.length];
+
+		for (int i = 0; i < model.length; i++) {
 			try {
-				//instantiate the models, ...
-				 Class<?>  fc = Class.forName(model[i]);
+				// instantiate the models, ...
+				Class<?> fc = Class.forName(model[i]);
 				am[i] = (AbstractModel) fc.newInstance();
-				//output structure of the models is the same as the one of the VS
+				// output structure of the models is the same as the one of the VS
 				am[i].setOutputFields(getVirtualSensorConfiguration().getOutputStructure());
-				//...set their parameters...			
-				for (String k: params.navigableKeySet())
-				{
-					String prefix = PARAM_MODEL_PREFIX+"."+i+".";
-					if (k.startsWith(prefix)){
-						am[i].setParam(k.substring(prefix.length()),params.get(k));
-					}	
+				// ...set their parameters...
+				for (String k : params.navigableKeySet()) {
+					String prefix = PARAM_MODEL_PREFIX + "." + i + ".";
+					if (k.startsWith(prefix)) {
+						am[i].setParam(k.substring(prefix.length()), params.get(k));
+					}
 				}
 				am[i].setVirtualSensor(this);
-				//... and initialize them.
-				if (! am[i].initialize()){
+				// ... and initialize them.
+				if (!am[i].initialize()) {
 					return false;
 				}
-						
+
 			} catch (Exception e) {
-				logger.error( e.getMessage( ) , e );
+				logger.error(e.getMessage(), e);
 				return false;
 			}
-        }
-        return true;
+		}
+		return true;
 	}
 
 	@Override
@@ -110,44 +118,56 @@ public class ModellingVirtualSensor extends AbstractVirtualSensor {
 
 	}
 
+	/**
+	 * Handles new sensor data arriving from sensor.
+	 *
+	 * Pushes the data to each configured model, collects the output,
+	 * sorts it by timestamp, and sends it out as the virtual sensor's
+	 * output.
+	 *
+	 * @param inputStreamName Name of the input stream for the arriving data
+	 * @param streamElement   The StreamElement data object containing the sensor
+	 *                        reading
+	 */
 	@Override
 	public void dataAvailable(String inputStreamName, StreamElement streamElement) {
-		StreamElement[] out = new StreamElement[]{streamElement};
-		if (am.length > 0){
-		    out = am[0].pushData(streamElement,inputStreamName); //by default returns the result from the first model
+		StreamElement[] out = new StreamElement[] { streamElement };
+		if (am.length > 0) {
+			out = am[0].pushData(streamElement, inputStreamName); // by default returns the result from the first model
 		}
-		for(int i=1;i<am.length;i++){
-			if (am[i] != null){
-				am[i].pushData(streamElement,inputStreamName);//push the data to all other models too
+		for (int i = 1; i < am.length; i++) {
+			if (am[i] != null) {
+				am[i].pushData(streamElement, inputStreamName);// push the data to all other models too
 			}
 		}
-		if(out != null){
-			Arrays.sort(out,new Comparator<StreamElement>(){
+		if (out != null) {
+			Arrays.sort(out, new Comparator<StreamElement>() {
 				@Override
 				public int compare(StreamElement o1, StreamElement o2) {
 					return Long.valueOf(o1.getTimeStamp()).compareTo(o2.getTimeStamp());
-				}});
-			for(int i=0;i<out.length;i++){
-				if(out[i] != null){
-            		dataProduced(out[i]);
+				}
+			});
+			for (int i = 0; i < out.length; i++) {
+				if (out[i] != null) {
+					dataProduced(out[i]);
 				}
 			}
 		}
 	}
-	
-	
+
 	/**
 	 * Return the model corresponding to the given index
+	 * 
 	 * @param index of the model
 	 * @return the model if it exists or null if the index is out of bound
 	 */
-	public AbstractModel getModel(int index){
-		if (index>=0 && index <am.length){
+	public AbstractModel getModel(int index) {
+		if (index >= 0 && index < am.length) {
 			return am[index];
-		} else{
+		} else {
 			return null;
 		}
-			
+
 	}
 
 }

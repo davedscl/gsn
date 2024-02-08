@@ -25,16 +25,19 @@
 
 package ch.epfl.gsn.delivery.datarequest;
 
+/**
+ * This exception is thrown when there is an error in processing a data request.
+ */
 public class DataRequestException extends Exception {
-	
+
 	private static final long serialVersionUID = 1047097453263123896L;
 
-	public DataRequestException () {
-		super () ;
+	public DataRequestException() {
+		super();
 	}
-	
-	public DataRequestException (String msg) {
-		super (msg) ;
+
+	public DataRequestException(String msg) {
+		super(msg);
 	}
-	
+
 }

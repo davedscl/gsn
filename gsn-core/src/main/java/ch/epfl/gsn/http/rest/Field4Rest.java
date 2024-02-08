@@ -24,11 +24,12 @@ public class Field4Rest {
 	public byte getType() {
 		return type;
 	}
-	
+
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
-		sb.append("Field(name:").append(name).append(",").append("type:").append(type).append(",value:").append(value).append(")");
+		sb.append("Field(name:").append(name).append(",").append("type:").append(type).append(",value:").append(value)
+				.append(")");
 		return sb.toString();
 	}
-	
+
 }

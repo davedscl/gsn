@@ -29,29 +29,30 @@ public class BackLogMessageMultiplexer extends Thread implements CoreStationList
 
 	/** Ping request interval in seconds. */
 	public static final int PING_INTERVAL_SEC = 30;
-	/** Time in seconds in which at least one ping acknowledge
-	    message should have been received. If no acknowledge has
-	    been received, the connection is considered broken. */
+	/**
+	 * Time in seconds in which at least one ping acknowledge
+	 * message should have been received. If no acknowledge has
+	 * been received, the connection is considered broken.
+	 */
 	public static final int PING_ACK_CHECK_INTERVAL_SEC = 300;
-	
+
 	public static final int PLUGIN_MESSAGE_QUEUE_SIZE = 1000;
 	public static final int PLUGIN_MESSAGE_QUEUE_WARN = 800;
 	public static final int PLUGIN_MESSAGE_QUEUE_READY = 400;
-	
+
 	public static final byte STUFFING_BYTE = 0x7e;
-	
+
 	public static final byte HELLO_BYTE = 0x7d;
-	
-	static final transient Logger logger = LoggerFactory.getLogger( BackLogMessageMultiplexer.class );
-	
 
-	private static Map<String,BackLogMessageMultiplexer> blMultiplexerMap = new HashMap<String,BackLogMessageMultiplexer>();
+	static final transient Logger logger = LoggerFactory.getLogger(BackLogMessageMultiplexer.class);
 
-	private Map<Integer,Vector<BackLogMessageListener>> msgTypeListener; // Mapping from type to Listener
+	private static Map<String, BackLogMessageMultiplexer> blMultiplexerMap = new HashMap<String, BackLogMessageMultiplexer>();
+
+	private Map<Integer, Vector<BackLogMessageListener>> msgTypeListener; // Mapping from type to Listener
 
 	protected AsyncCoreStationClient asyncCoreStationClient = null;
 	private CoreStationStatistics coreStationStatistics = null;
-	private BlockingQueue<byte []> recvQueue = new LinkedBlockingQueue<byte[]>();
+	private BlockingQueue<byte[]> recvQueue = new LinkedBlockingQueue<byte[]>();
 	private PluginMessageHandler pluginMessageHandler;
 	private boolean dispose = false;
 	private Integer activPluginCounter = 0;
@@ -66,75 +67,82 @@ public class BackLogMessageMultiplexer extends Thread implements CoreStationList
 	private String deploymentName;
 	boolean stuff = false;
 	Boolean connected = false;
-	
-	
+
 	public BackLogMessageMultiplexer() throws Exception {
 		throw new Exception("use 'getInstance(String CoreStation)' function for instantiation");
 	}
-	
-	
+
 	private BackLogMessageMultiplexer(String deployment, String hostName, Integer port) throws Exception {
-		msgTypeListener = Collections.synchronizedMap(new HashMap<Integer,Vector<BackLogMessageListener>> ());
-		
+		msgTypeListener = Collections.synchronizedMap(new HashMap<Integer, Vector<BackLogMessageListener>>());
+
 		coreStationAddress = hostName + ":" + port;
 		this.hostName = hostName;
 		this.hostPort = port;
-    	this.deploymentName = deployment;
-    	
-    	pluginMessageHandler = new PluginMessageHandler(this, PLUGIN_MESSAGE_QUEUE_SIZE);
-    	
-    	asyncCoreStationClient = AsyncCoreStationClient.getSingletonObject();
-    	
-    	coreStationStatistics = StatisticsMain.getCoreStationStatsInstance(deployment, coreStationAddress);
-		
+		this.deploymentName = deployment;
+
+		pluginMessageHandler = new PluginMessageHandler(this, PLUGIN_MESSAGE_QUEUE_SIZE);
+
+		asyncCoreStationClient = AsyncCoreStationClient.getSingletonObject();
+
+		coreStationStatistics = StatisticsMain.getCoreStationStatsInstance(deployment, coreStationAddress);
+
 		setName("BackLogMessageMultiplexer-" + getCoreStationName() + "-Thread");
 	}
-	
-	
+
 	@SuppressWarnings("unused")
-	public synchronized static BackLogMessageMultiplexer getInstance(String deployment, String coreStationAddress) throws Exception {
+	public synchronized static BackLogMessageMultiplexer getInstance(String deployment, String coreStationAddress)
+			throws Exception {
 		String coreStationAddress_noIp;
 		InetAddress inetAddress;
 		Integer hostPort;
-		if( PING_ACK_CHECK_INTERVAL_SEC <= PING_INTERVAL_SEC ){
+		if (PING_ACK_CHECK_INTERVAL_SEC <= PING_INTERVAL_SEC) {
 			throw new Exception("PING_ACK_CHECK_INTERVAL_SEC must be bigger than PING_INTERVAL_SEC");
 		}
-		
+
 		// a first pattern match test for >host:port<
-    	Matcher m = Pattern.compile("(.*):(.*)").matcher(coreStationAddress);
-    	if ( m.find() ) {
+		Matcher m = Pattern.compile("(.*):(.*)").matcher(coreStationAddress);
+		if (m.find()) {
 			inetAddress = InetAddress.getByName(m.group(1));
-            hostPort = new Integer(m.group(2));
+			hostPort = new Integer(m.group(2));
 			coreStationAddress_noIp = inetAddress.getHostName() + ":" + hostPort;
-			if(blMultiplexerMap.containsKey(coreStationAddress_noIp)) {
+			if (blMultiplexerMap.containsKey(coreStationAddress_noIp)) {
 				return blMultiplexerMap.get(coreStationAddress_noIp);
-			}
-			else {
-				BackLogMessageMultiplexer blMulti = new BackLogMessageMultiplexer(deployment, inetAddress.getHostName(), hostPort);
+			} else {
+				BackLogMessageMultiplexer blMulti = new BackLogMessageMultiplexer(deployment, inetAddress.getHostName(),
+						hostPort);
 				blMultiplexerMap.put(coreStationAddress_noIp, blMulti);
 				return blMulti;
 			}
-    	}
-    	else {
+		} else {
 			throw new IOException("Remote BackLog host string (" + coreStationAddress + ") does not match >host:port<");
-    	}
+		}
 	}
-	  
-	
+
+	/**
+	 * Processes the given data and adds it to the receive queue.
+	 *
+	 * @param data  the byte array containing the data to be processed
+	 * @param count the number of bytes to be processed from the data array
+	 */
 	public void processData(byte[] data, int count) {
 		byte[] dataCopy = new byte[count];
 		System.arraycopy(data, 0, dataCopy, 0, count);
 		recvQueue.offer(dataCopy);
 	}
-	
-	
+
+	/**
+	 * Runs the thread for handling incoming messages from the backlog.
+	 * This method reads data from the recvQueue, processes it, and handles the
+	 * messages accordingly.
+	 * It also handles the connection establishment and disconnection.
+	 */
 	public void run() {
 		logger.info("thread started");
-		
-		//TODO: use DataInputStream to handle data
-		
+
+		// TODO: use DataInputStream to handle data
+
 		pluginMessageHandler.start();
-    	
+
 		try {
 			asyncCoreStationClient.registerListener(this);
 		} catch (Exception e) {
@@ -146,108 +154,109 @@ public class BackLogMessageMultiplexer extends Thread implements CoreStationList
 		boolean conn = false;
 		boolean connecting = true;
 		long packetLength = -1;
-		while(!dispose) {
+		while (!dispose) {
 			try {
-				byte [] in;
+				byte[] in;
 				try {
 					in = recvQueue.take();
 					coreStationStatistics.bytesReceived(in.length);
 				} catch (InterruptedException e) {
-					if (logger.isDebugEnabled()){
+					if (logger.isDebugEnabled()) {
 						logger.debug(e.getMessage());
-					} 
+					}
 					break;
 				}
-				if (dispose){
+				if (dispose) {
 					break;
 				}
-				
+
 				ByteArrayOutputStream baos = new ByteArrayOutputStream();
 				if (!pktDestuffing(in, baos)) {
-					logger.debug("stuffing mark reached");
+					if(logger.isDebugEnabled()){
+						logger.debug("stuffing mark reached");
+					}
 					connecting = true;
 					conn = false;
 					newPacket = true;
 					packetLength = -1;
 					pkt = new ByteArrayOutputStream();
-					
+
 					if (baos.size() == 0) {
 						continue;
 					}
 				}
 
 				pkt.write(baos.toByteArray());
-				
+
 				if (connecting) {
 					if (pkt.size() >= 5) {
 						byte[] tmp = pkt.toByteArray();
 						pkt = new ByteArrayOutputStream();
-						
-						if (tmp.length > 5){
+
+						if (tmp.length > 5) {
 							pkt.write(java.util.Arrays.copyOfRange(tmp, (int) (5), tmp.length));
 						}
 
 						connecting = false;
-						if (tmp[0] != HELLO_BYTE) {
+						if (tmp[0] == HELLO_BYTE) {
+							coreStationDeviceId = arr2int(tmp, 1);
+							logger.info("connected successfully to CoreStation " + hostName + " with device id "
+									+ coreStationDeviceId + " at " + deploymentName + " deployment");
+							asyncCoreStationClient.addDeviceId(deploymentName, coreStationDeviceId, this);
+							connectionFinished();
+							conn = true;
+						} else {
 							logger.error("connection hello message does not match -> reconnect");
 							asyncCoreStationClient.reconnect(this);
 							recvQueue.clear();
 						}
-						else {
-							coreStationDeviceId = arr2int(tmp, 1);
-							logger.info("connected successfully to CoreStation " + hostName + " with device id " + coreStationDeviceId + " at " + deploymentName + " deployment");
-							asyncCoreStationClient.addDeviceId(deploymentName, coreStationDeviceId, this);
-							connectionFinished();
-							conn = true;
-						}
 					}
 				}
-				
+
 				boolean hasMorePkt = true;
-				while(hasMorePkt && conn) {
+				while (hasMorePkt && conn) {
 					if (newPacket) {
 						if (pkt.size() >= 4) {
-							if (logger.isDebugEnabled()){
+							if (logger.isDebugEnabled()) {
 								logger.debug("rcv...");
-							}								
+							}
 							packetLength = arr2uint(pkt.toByteArray(), 0);
 							newPacket = false;
-						}
-						else{
+						} else {
 							hasMorePkt = false;
 						}
-							
+
 					}
-	
-					if (!newPacket && pkt.size() >= packetLength+4) {
+
+					if (!newPacket && pkt.size() >= packetLength + 4) {
 						byte[] tmp = pkt.toByteArray();
 						pkt = new ByteArrayOutputStream();
 						newPacket = true;
-						
-						if (tmp.length > packetLength+4){
-							pkt.write(java.util.Arrays.copyOfRange(tmp, (int) (packetLength+4), tmp.length));
+
+						if (tmp.length > packetLength + 4) {
+							pkt.write(java.util.Arrays.copyOfRange(tmp, (int) (packetLength + 4), tmp.length));
 						}
-						
-			    		BackLogMessage msg = null;
+
+						BackLogMessage msg = null;
 						try {
-							msg = new BackLogMessage(java.util.Arrays.copyOfRange(tmp, 4, (int) (packetLength+4)));
+							msg = new BackLogMessage(java.util.Arrays.copyOfRange(tmp, 4, (int) (packetLength + 4)));
 						} catch (Exception e) {
 							logger.error(e.getMessage(), e);
 							continue;
 						}
-						if (logger.isDebugEnabled()){
-							logger.debug("rcv (" + msg.getType() + "," + msg.getTimestamp() + "," + msg.getBinaryMessage().length + ")");
+						if (logger.isDebugEnabled()) {
+							logger.debug("rcv (" + msg.getType() + "," + msg.getTimestamp() + ","
+									+ msg.getBinaryMessage().length + ")");
 						}
 						coreStationStatistics.msgReceived(msg.getType(), msg.getSize());
-			    		if( msg.getType() == BackLogMessage.PING_MESSAGE_TYPE ) {
-			    			sendPingAck(msg.getTimestamp());
-			    		}
-			    		else if( msg.getType() == BackLogMessage.PING_ACK_MESSAGE_TYPE ){
+						if (msg.getType() == BackLogMessage.PING_MESSAGE_TYPE) {
+							sendPingAck(msg.getTimestamp());
+						} else if (msg.getType() == BackLogMessage.PING_ACK_MESSAGE_TYPE) {
 							resetWatchDog();
 						} else {
 							pluginMessageHandler.newPluginMessage(msg);
 						}
-			    			
+
 					} else {
 						hasMorePkt = false;
 					}
@@ -258,65 +267,72 @@ public class BackLogMessageMultiplexer extends Thread implements CoreStationList
 		}
 		logger.info("thread stoped");
 	}
-	
-	
+
+	/**
+	 * Performs packet destuffing on the given input byte array.
+	 * 
+	 * @param in        the input byte array to be destuffed
+	 * @param destuffed the ByteArrayOutputStream to store the destuffed bytes
+	 * @return true if the destuffing is successful, false otherwise
+	 */
 	private boolean pktDestuffing(byte[] in, ByteArrayOutputStream destuffed) {
-		for(int i=0; i<in.length; i++) {
-			if (in[i] == STUFFING_BYTE && !stuff){
+		for (int i = 0; i < in.length; i++) {
+			if (in[i] == STUFFING_BYTE && !stuff) {
 				stuff = true;
 			} else if (stuff) {
 				if (in[i] == STUFFING_BYTE) {
 					destuffed.write(in[i]);
 					stuff = false;
-				}
-				else {
+				} else {
 					try {
 						destuffed.flush();
 					} catch (IOException e) {
 						logger.error(e.getMessage(), e);
 					}
 					stuff = false;
-					if (in.length-i != 0) {
+					if (in.length - i != 0) {
 						pktDestuffing(java.util.Arrays.copyOfRange(in, i, in.length), destuffed);
 					}
-					
+
 					return false;
 				}
 			} else {
 				destuffed.write(in[i]);
 			}
-				
+
 		}
 		return true;
 	}
 
-
+	/**
+	 * Disposes the BackLogMessageMultiplexer by stopping timers, clearing queues,
+	 * and performing necessary cleanup tasks.
+	 */
 	private void dispose() {
 		logger.info("dispose");
-    	// stop ping timer
-		if (pingTimer != null){
+		// stop ping timer
+		if (pingTimer != null) {
 			pingTimer.cancel();
 		}
-    	// stop ping checker timer
-		if (pingWatchDogTimer != null){
+		// stop ping checker timer
+		if (pingWatchDogTimer != null) {
 			pingWatchDogTimer.cancel();
 		}
-			
-        
+
 		dispose = true;
 		recvQueue.clear();
-		byte[] end = {'e','n','d'};
+		byte[] end = { 'e', 'n', 'd' };
 		recvQueue.offer(end);
 		msgTypeListener.clear();
-		
+
 		pluginMessageHandler.dispose();
-		
-		if (blMultiplexerMap.remove(coreStationAddress) == null){
+
+		if (blMultiplexerMap.remove(coreStationAddress) == null) {
 			logger.error("there is no " + coreStationAddress + " available in the map");
 		}
-		
+
 		asyncCoreStationClient.deregisterListener(this);
-		
+
 		try {
 			StatisticsMain.removeCoreStationStatsInstance(deploymentName, coreStationAddress);
 		} catch (IOException e) {
@@ -324,119 +340,123 @@ public class BackLogMessageMultiplexer extends Thread implements CoreStationList
 		}
 	}
 
-
 	/**
 	 * Send the message to the CoreStation with the specific id.
 	 * The timestamp field in the BackLogMessage will be overwritten
 	 * with System.currentTimeMillis() in this function!
 	 * 
 	 * @param message
-	 *          a BackLogMessage to be sent to the CoreStation
-	 *          
+	 *                 a BackLogMessage to be sent to the CoreStation
+	 * 
 	 * @param id
-	 *          the id of the CoreStation the message should be sent to or null
-	 *          if the message should be sent to the CoreStation this BackLogMessageMultiplexer
-	 *          is connected to
-	 *          
+	 *                 the id of the CoreStation the message should be sent to or
+	 *                 null
+	 *                 if the message should be sent to the CoreStation this
+	 *                 BackLogMessageMultiplexer
+	 *                 is connected to
+	 * 
 	 * @param priority
-	 *          the priority this message has. The smaller the number the higher the
-	 *          priority to send this message as soon as possible is. It should be somewhere
-	 *          between 10 and 1000.
-	 *          
+	 *                 the priority this message has. The smaller the number the
+	 *                 higher the
+	 *                 priority to send this message as soon as possible is. It
+	 *                 should be somewhere
+	 *                 between 10 and 1000.
+	 * 
 	 * @return false if the connection to the CoreStation is not established
 	 * 
 	 * @throws IOException if the message is too long or the DeviceId does not exist
 	 */
 	public boolean sendMessage(BackLogMessage message, Integer id, int priority) throws IOException {
-		if (logger.isDebugEnabled()){
-			logger.debug("snd (" + message.getType() + "," + message.getTimestamp() + "," + message.getBinaryMessage().length + ")");
+		if (logger.isDebugEnabled()) {
+			logger.debug("snd (" + message.getType() + "," + message.getTimestamp() + ","
+					+ message.getBinaryMessage().length + ")");
 		}
 		if (id == null) {
-			Serializable [] ret = asyncCoreStationClient.send(deploymentName, coreStationDeviceId, this, priority, message.getBinaryMessage());
+			Serializable[] ret = asyncCoreStationClient.send(deploymentName, coreStationDeviceId, this, priority,
+					message.getBinaryMessage());
 			if ((Boolean) ret[0]) {
 				coreStationStatistics.msgSent(message.getType(), message.getSize());
-				coreStationStatistics.bytesSent((Long)ret[1]);
+				coreStationStatistics.bytesSent((Long) ret[1]);
 				return true;
 			}
 		} else {
-			Serializable [] ret = asyncCoreStationClient.send(deploymentName, id, this, priority, message.getBinaryMessage());
+			Serializable[] ret = asyncCoreStationClient.send(deploymentName, id, this, priority,
+					message.getBinaryMessage());
 			if ((Boolean) ret[0]) {
 				coreStationStatistics.msgSent(message.getType(), message.getSize());
-				coreStationStatistics.bytesSent((Long)ret[1]);
+				coreStationStatistics.bytesSent((Long) ret[1]);
 				return true;
 			}
 		}
 		return false;
 	}
 
-
 	/**
 	 * Register a particular listener for a specific message type. More than one
 	 * listener can be registered for each message type.
 	 * 
 	 * @param msgType
-	 *          specify message type we're listening for
+	 *                 specify message type we're listening for
 	 * @param listener
-	 *          destination for received messages
+	 *                 destination for received messages
 	 */
 	public synchronized void registerListener(int msgType, BackLogMessageListener listener, boolean isPlugin) {
 		Integer msgTypeInt = new Integer(msgType);
-	    Vector<BackLogMessageListener> vec = msgTypeListener.get(msgTypeInt);
-	    if (vec == null) {
-	      vec = new Vector<BackLogMessageListener>();
-	    }
+		Vector<BackLogMessageListener> vec = msgTypeListener.get(msgTypeInt);
+		if (vec == null) {
+			vec = new Vector<BackLogMessageListener>();
+		}
 
-	    vec.addElement(listener);
-	    msgTypeListener.put(msgTypeInt, vec);
-		if (logger.isDebugEnabled()){
+		vec.addElement(listener);
+		msgTypeListener.put(msgTypeInt, vec);
+		if (logger.isDebugEnabled()) {
 			logger.debug("Listener for message type " + msgType + " registered");
 		}
-	    
-	    if (isPlugin){
+
+		if (isPlugin) {
 			activPluginCounter++;
-		}	
+		}
 	}
 
-	
 	/**
 	 * Stop listening for messages of the given type with the given listener.
 	 * 
 	 * @param msgType
-	 *          specify message type we're listening for
+	 *                 specify message type we're listening for
 	 * @param listener
-	 *          the listener we want to deregister
+	 *                 the listener we want to deregister
 	 * @return number of different message types which are still listened to
 	 */
-	public synchronized void deregisterListener(int msgType, BackLogMessageListener listener, boolean isPlugin) throws IllegalArgumentException {
+	public synchronized void deregisterListener(int msgType, BackLogMessageListener listener, boolean isPlugin)
+			throws IllegalArgumentException {
 		Integer msgTypeInt = new Integer(msgType);
 		Vector<BackLogMessageListener> vec = msgTypeListener.get(msgTypeInt);
-		
-		if (vec == null){
-			throw new IllegalArgumentException( "No listeners registered for message type " + msgType);
-		}
-			
-		
-		// Remove all occurrences
-		while (vec.removeElement(listener));
 
-		if (logger.isDebugEnabled()){
+		if (vec == null) {
+			throw new IllegalArgumentException("No listeners registered for message type " + msgType);
+		}
+
+		// Remove all occurrences
+		while (vec.removeElement(listener))
+			;
+
+		if (logger.isDebugEnabled()) {
 			logger.debug("Listener for message type " + msgTypeInt + " deregistered");
 		}
 
-		if (vec.size() == 0){
+		if (vec.size() == 0) {
 			msgTypeListener.remove(msgTypeInt);
-		}	
-		
+		}
+
 		if (isPlugin) {
 			activPluginCounter--;
-		
-			if (activPluginCounter == 0){
+
+			if (activPluginCounter == 0) {
 				dispose();
 			}
-				
+
 		}
 	}
-	
 
 	/**
 	 * Distribute the received message to the corresponding listeners.
@@ -448,78 +468,90 @@ public class BackLogMessageMultiplexer extends Thread implements CoreStationList
 		Integer msgTypeInt = new Integer(message.getType());
 		Vector<BackLogMessageListener> vec = msgTypeListener.get(msgTypeInt);
 		if (vec == null) {
-			logger.warn("Received message with type " + message.getType() + ", but no listeners registered. Skip message.");
+			logger.warn(
+					"Received message with type " + message.getType() + ", but no listeners registered. Skip message.");
 			return;
 		}
-	
+
 		Enumeration<BackLogMessageListener> en = vec.elements();
 		// send the message to all listeners
 		while (en.hasMoreElements()) {
 			BackLogMessageListener temp = en.nextElement();
 			// send the message to the listener
 			try {
-				if (temp.messageRecv(coreStationDeviceId, message) == true){
+				if (temp.messageRecv(coreStationDeviceId, message) == true) {
 					ReceiverCount++;
-				}	
-			}
-			catch (Exception e) {
+				}
+			} catch (Exception e) {
 				logger.error("Could not process message with type " + message.getType() + ": " + e.getMessage());
 			}
 		}
-		if (ReceiverCount == 0){
-			logger.warn("Received message with type " + message.getType() + ", but none of the registered listeners did process it. Skip message.");
+		if (ReceiverCount == 0) {
+			logger.warn("Received message with type " + message.getType()
+					+ ", but none of the registered listeners did process it. Skip message.");
 		}
 	}
-
 
 	@Override
 	public InetAddress getInetAddress() throws UnknownHostException {
 		return InetAddress.getByName(hostName);
 	}
 
-
 	@Override
 	public int getPort() {
 		return hostPort;
 	}
 
-
+	/**
+	 * Sends an ACK message with the specified timestamp, message type, and
+	 * priority.
+	 *
+	 * @param timestamp The timestamp of the ACK message.
+	 * @param msgType   The message type of the ACK message.
+	 * @param priority  The priority of the ACK message.
+	 */
 	public void sendAck(long timestamp, int msgType, int priority) {
 		// send ACK with corresponding timestamp and message type
 		BackLogMessage ack;
 		try {
-			Serializable [] type = {msgType};
+			Serializable[] type = { msgType };
 			ack = new BackLogMessage(BackLogMessage.ACK_MESSAGE_TYPE, timestamp, type);
 			if (logger.isDebugEnabled()) {
 				logger.debug("Ack sent: (timestamp=" + timestamp + "/messageType=" + msgType + ")");
 			}
 
-				sendMessage(ack, null, priority);
+			sendMessage(ack, null, priority);
 		} catch (Exception e) {
 			logger.warn(e.getMessage());
 		}
 	}
-	
-	
+
+	/**
+	 * This method is called when the connection is finished. It performs various
+	 * tasks such as starting the ping timer,
+	 * resetting the watchdog, sending queue limit or queue ready messages, updating
+	 * the connection status, and notifying
+	 * the listeners about the established remote connection.
+	 */
 	private void connectionFinished() {
-		if (logger.isDebugEnabled()){
+		if (logger.isDebugEnabled()) {
 			logger.debug("connection finished");
 		}
-			
-		
-    	// start ping timer
-        pingTimer = new Timer("PingTimer-" + getCoreStationName());
-        pingTimer.schedule( new PingTimer(this), PING_INTERVAL_SEC * 1000, PING_INTERVAL_SEC * 1000 );
 
-        resetWatchDog();
-		
+		// start ping timer
+		pingTimer = new Timer("PingTimer-" + getCoreStationName());
+		pingTimer.schedule(new PingTimer(this), PING_INTERVAL_SEC * 1000, PING_INTERVAL_SEC * 1000);
+
+		resetWatchDog();
+
 		if (pluginMessageHandler.isMsgQueueLimitReached()) {
 			sendQueueLimitMsg();
 			logger.warn("message queue limit reached => sending queue limit message");
-		}
-		else if (pluginMessageHandler.isMsgQueueReady()) {
+		} else if (pluginMessageHandler.isMsgQueueReady()) {
 			sendQueueReadyMsg();
-			logger.debug("message queue ready => sending queue ready message");
+			if(logger.isDebugEnabled()){
+				logger.debug("message queue ready => sending queue ready message");
+			}
 		}
 
 		synchronized (connected) {
@@ -531,7 +563,7 @@ public class BackLogMessageMultiplexer extends Thread implements CoreStationList
 			} catch (IOException e) {
 				logger.error(e.getMessage());
 			}
-	
+
 			Collection<Vector<BackLogMessageListener>> val = msgTypeListener.values();
 			synchronized (msgTypeListener) {
 				Iterator<Vector<BackLogMessageListener>> iter = val.iterator();
@@ -546,13 +578,19 @@ public class BackLogMessageMultiplexer extends Thread implements CoreStationList
 		}
 	}
 
-
+	/**
+	 * This method is called when the connection to the server is established.
+	 * It resets the watchdog and sends a hello message to the
+	 * asyncCoreStationClient.
+	 * 
+	 * @throws IOException if an I/O error occurs while sending the hello message
+	 */
 	@Override
 	public void connectionEstablished() {
-		if (logger.isDebugEnabled()){
+		if (logger.isDebugEnabled()) {
 			logger.debug("connection established");
 		}
-		
+
 		resetWatchDog();
 
 		try {
@@ -562,23 +600,28 @@ public class BackLogMessageMultiplexer extends Thread implements CoreStationList
 		}
 	}
 
-
+	/**
+	 * This method is called when the connection to the CoreStation is lost.
+	 * It performs the necessary cleanup tasks and notifies the listeners about the
+	 * lost connection.
+	 */
 	@Override
 	public void connectionLost() {
-		logger.info("connection to CoreStation " + hostName + " with device id " + coreStationDeviceId + " at " + deploymentName + " deployment lost");
-		
+		logger.info("connection to CoreStation " + hostName + " with device id " + coreStationDeviceId + " at "
+				+ deploymentName + " deployment lost");
+
 		recvQueue.clear();
 		pluginMessageHandler.clearMsgQueue();
-		
-    	// stop ping timer
-		if (pingTimer != null){
+
+		// stop ping timer
+		if (pingTimer != null) {
 			pingTimer.cancel();
 		}
-    	// stop ping checker timer
-		if (pingWatchDogTimer != null){
+		// stop ping checker timer
+		if (pingWatchDogTimer != null) {
 			pingWatchDogTimer.cancel();
 		}
-		
+
 		synchronized (connected) {
 			if (connected) {
 				connected = false;
@@ -588,10 +631,10 @@ public class BackLogMessageMultiplexer extends Thread implements CoreStationList
 				} catch (IOException e) {
 					logger.error(e.getMessage());
 				}
-		
+
 				Collection<Vector<BackLogMessageListener>> val = msgTypeListener.values();
 				synchronized (msgTypeListener) {
-				Iterator<Vector<BackLogMessageListener>> iter = val.iterator();
+					Iterator<Vector<BackLogMessageListener>> iter = val.iterator();
 					while (iter.hasNext()) {
 						Enumeration<BackLogMessageListener> en = iter.next().elements();
 						// send the message to all listeners
@@ -600,26 +643,24 @@ public class BackLogMessageMultiplexer extends Thread implements CoreStationList
 						}
 					}
 				}
-				
+
 				asyncCoreStationClient.removeDeviceId(deploymentName, coreStationDeviceId);
 			}
 		}
 	}
-	
-	
+
 	private void resetWatchDog() {
-    	// reset watch dog timer
-		if (logger.isDebugEnabled()){
+		// reset watch dog timer
+		if (logger.isDebugEnabled()) {
 			logger.debug("reset ping watchdog");
 		}
-		if (pingWatchDogTimer != null){
+		if (pingWatchDogTimer != null) {
 			pingWatchDogTimer.cancel();
 		}
-			
-        pingWatchDogTimer = new Timer("PingWatchDog-" + getCoreStationName());
-        pingWatchDogTimer.schedule( new PingWatchDog(this), PING_ACK_CHECK_INTERVAL_SEC * 1000 );
+
+		pingWatchDogTimer = new Timer("PingWatchDog-" + getCoreStationName());
+		pingWatchDogTimer.schedule(new PingWatchDog(this), PING_ACK_CHECK_INTERVAL_SEC * 1000);
 	}
-	
 
 	/**
 	 * Send a ping message to the CoreStation.
@@ -632,7 +673,6 @@ public class BackLogMessageMultiplexer extends Thread implements CoreStationList
 			logger.error(e.getMessage());
 		}
 	}
-	
 
 	/**
 	 * Send a ping acknowledge message to the CoreStation.
@@ -649,17 +689,14 @@ public class BackLogMessageMultiplexer extends Thread implements CoreStationList
 		}
 	}
 
-
 	@Override
 	public String getCoreStationName() {
 		return hostName;
 	}
-	
-	
+
 	public boolean isConnected() {
 		return connected;
 	}
-
 
 	public Integer getDeviceID() {
 		return coreStationDeviceId;
@@ -667,7 +704,8 @@ public class BackLogMessageMultiplexer extends Thread implements CoreStationList
 
 	protected void sendQueueLimitMsg() {
 		try {
-			sendMessage(new BackLogMessage(BackLogMessage.MESSAGE_QUEUE_LIMIT_MESSAGE_TYPE, System.currentTimeMillis()), null, 1);
+			sendMessage(new BackLogMessage(BackLogMessage.MESSAGE_QUEUE_LIMIT_MESSAGE_TYPE, System.currentTimeMillis()),
+					null, 1);
 		} catch (IOException e) {
 			logger.error(e.getMessage());
 		}
@@ -675,13 +713,21 @@ public class BackLogMessageMultiplexer extends Thread implements CoreStationList
 
 	protected void sendQueueReadyMsg() {
 		try {
-			sendMessage(new BackLogMessage(BackLogMessage.MESSAGE_QUEUE_READY_MESSAGE_TYPE, System.currentTimeMillis()), null, 1);
+			sendMessage(new BackLogMessage(BackLogMessage.MESSAGE_QUEUE_READY_MESSAGE_TYPE, System.currentTimeMillis()),
+					null, 1);
 		} catch (IOException e) {
 			logger.error(e.getMessage());
 		}
 	}
-	
-	private static long arr2uint (byte[] arr, int start) {
+
+	/**
+	 * Converts a byte array to an unsigned integer.
+	 *
+	 * @param arr   the byte array to convert
+	 * @param start the starting index in the byte array
+	 * @return the converted unsigned integer value
+	 */
+	private static long arr2uint(byte[] arr, int start) {
 		int i = 0;
 		int len = 4;
 		int cnt = 0;
@@ -692,14 +738,21 @@ public class BackLogMessageMultiplexer extends Thread implements CoreStationList
 		}
 		long accum = 0;
 		i = 0;
-		for ( int shiftBy = 0; shiftBy < 32; shiftBy += 8 ) {
-			accum |= ( (long)( tmp[i] & 0xff ) ) << shiftBy;
+		for (int shiftBy = 0; shiftBy < 32; shiftBy += 8) {
+			accum |= ((long) (tmp[i] & 0xff)) << shiftBy;
 			i++;
 		}
 		return accum;
 	}
-	
-	private static int arr2int (byte[] arr, int start) {
+
+	/**
+	 * Converts a byte array to an integer starting from the specified index.
+	 *
+	 * @param arr   the byte array to convert
+	 * @param start the starting index in the byte array
+	 * @return the converted integer value
+	 */
+	private static int arr2int(byte[] arr, int start) {
 		int i = 0;
 		int len = 4;
 		int cnt = 0;
@@ -710,55 +763,61 @@ public class BackLogMessageMultiplexer extends Thread implements CoreStationList
 		}
 		int accum = 0;
 		i = 0;
-		for ( int shiftBy = 0; shiftBy < 32; shiftBy += 8 ) {
-			accum |= ( (int)( tmp[i] & 0xff ) ) << shiftBy;
+		for (int shiftBy = 0; shiftBy < 32; shiftBy += 8) {
+			accum |= ((int) (tmp[i] & 0xff)) << shiftBy;
 			i++;
 		}
 		return accum;
 	}
 }
 
-
-
 class PluginMessageHandler extends Thread {
-	protected final transient Logger logger = LoggerFactory.getLogger( PluginMessageHandler.class );
+	protected final transient Logger logger = LoggerFactory.getLogger(PluginMessageHandler.class);
 
 	private BlockingQueue<BackLogMessage> plugMsgQueue;
 	private boolean dispose = false;
 	private boolean queueLimitReached = false;
 	BackLogMessageMultiplexer blMsgMulti;
-	
+
 	public PluginMessageHandler(BackLogMessageMultiplexer parent, int maxQueueSize) {
 		plugMsgQueue = new LinkedBlockingQueue<BackLogMessage>(maxQueueSize);
 		blMsgMulti = parent;
-		
+
 		setName("PluginMessageHandler-" + blMsgMulti.getCoreStationName() + "-Thread");
 	}
-	
+
 	public boolean newPluginMessage(BackLogMessage msg) {
 		boolean ret = plugMsgQueue.offer(msg);
 		if (isMsgQueueLimitReached()) {
 			blMsgMulti.sendQueueLimitMsg();
-			if (!queueLimitReached){
+			if (!queueLimitReached) {
 				logger.warn("message queue limit reached => sending queue limit message");
 			}
 			queueLimitReached = true;
 		}
-		if (!ret){
+		if (!ret) {
 			logger.warn("message queue is full");
 		}
-			
+
 		return ret;
 	}
-	
+
 	protected boolean isMsgQueueReady() {
 		return plugMsgQueue.size() <= BackLogMessageMultiplexer.PLUGIN_MESSAGE_QUEUE_READY;
 	}
-	
+
 	protected boolean isMsgQueueLimitReached() {
 		return plugMsgQueue.size() >= BackLogMessageMultiplexer.PLUGIN_MESSAGE_QUEUE_WARN;
 	}
-	
+
+	/**
+	 * Executes the thread's main logic for processing backlog messages.
+	 * This method continuously retrieves messages from the message queue and
+	 * multiplexes them.
+	 * If the queue limit is reached and the message queue becomes ready again, a
+	 * queue ready message is sent.
+	 * The method will exit when the dispose flag is set to true.
+	 */
 	public void run() {
 		logger.info("thread started");
 		BackLogMessage msg = null;
@@ -766,16 +825,16 @@ class PluginMessageHandler extends Thread {
 			try {
 				msg = plugMsgQueue.take();
 				if (queueLimitReached && isMsgQueueReady()) {
-					//TODO: send queue ready msg is only sent once... what if it does not reach the Core Station?
+					// TODO: send queue ready msg is only sent once... what if it does not reach the
+					// Core Station?
 					blMsgMulti.sendQueueReadyMsg();
 					logger.warn("message queue ready again => sending queue ready message");
 					queueLimitReached = false;
 				}
-				if (dispose){
+				if (dispose) {
 					break;
 				}
-					
-				
+
 				blMsgMulti.multiplexMessage(msg);
 			} catch (InterruptedException e) {
 				logger.error(e.getMessage(), e);
@@ -783,11 +842,11 @@ class PluginMessageHandler extends Thread {
 		}
 		logger.info("thread died");
 	}
-	
+
 	public void clearMsgQueue() {
 		plugMsgQueue.clear();
 	}
-	
+
 	public void dispose() {
 		logger.info("dispose thread");
 		dispose = true;
@@ -799,8 +858,6 @@ class PluginMessageHandler extends Thread {
 	}
 }
 
-
-
 /**
  * Sends a ping to the CoreStation.
  * 
@@ -808,14 +865,14 @@ class PluginMessageHandler extends Thread {
  */
 class PingTimer extends TimerTask {
 	private BackLogMessageMultiplexer parent;
-	protected final transient Logger logger = LoggerFactory.getLogger( PingTimer.class );
-	
+	protected final transient Logger logger = LoggerFactory.getLogger(PingTimer.class);
+
 	public PingTimer(BackLogMessageMultiplexer parent) {
 		this.parent = parent;
 	}
-	
+
 	public void run() {
-		if (logger.isDebugEnabled()){
+		if (logger.isDebugEnabled()) {
 			logger.debug("ping");
 		}
 		parent.sendPing();
@@ -831,14 +888,14 @@ class PingTimer extends TimerTask {
  */
 class PingWatchDog extends TimerTask {
 	private BackLogMessageMultiplexer parent;
-	protected final transient Logger logger = LoggerFactory.getLogger( PingWatchDog.class );
-	
+	protected final transient Logger logger = LoggerFactory.getLogger(PingWatchDog.class);
+
 	public PingWatchDog(BackLogMessageMultiplexer parent) {
 		this.parent = parent;
 	}
-	
+
 	public void run() {
-		if (logger.isDebugEnabled()){
+		if (logger.isDebugEnabled()) {
 			logger.debug("connection lost");
 		}
 		parent.asyncCoreStationClient.reconnect(parent);

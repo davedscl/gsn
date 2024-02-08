@@ -35,7 +35,6 @@ import ch.epfl.gsn.beans.StreamElement;
 import ch.epfl.gsn.storage.DataEnumerator;
 import ch.epfl.gsn.storage.StorageManager;
 import ch.epfl.gsn.storage.StorageManagerFactory;
-import ch.epfl.gsn.wrappers.AbstractWrapper;
 
 import org.slf4j.Logger;
 import org.apache.commons.io.FileUtils;
@@ -52,12 +51,13 @@ import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
 /**
- * This JDBC wrapper enables one to reply the existing stream from a a table in a database.
+ * This JDBC wrapper enables one to reply the existing stream from a a table in
+ * a database.
  * parameters: table: table name, start-time: starting time to replay from
  */
 public class JDBCWrapper extends AbstractWrapper {
 
-    private static long DEFAULT_RATE = 1000;   // 1 second in milliseconds
+    private static long DEFAULT_RATE = 1000; // 1 second in milliseconds
     private static long DEFAULT_BUFFER_SIZE = 100;
 
     private transient Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -96,6 +96,19 @@ public class JDBCWrapper extends AbstractWrapper {
         return outputFormat;
     }
 
+    /**
+     * Initializes the JDBCWrapper with the configuration obtained from the active
+     * AddressBean.
+     * This method retrieves database connection parameters, including the table
+     * name, JDBC URL,
+     * username, password, and driver. It then establishes a connection to the
+     * database using
+     * the specified parameters.
+     *
+     * @return {@code true} if initialization is successful, {@code false}
+     *         otherwise. If false, warnings
+     *         are logged indicating missing or malformed parameters.
+     */
     public boolean initialize() {
         AddressBean addressBean = getActiveAddressBean();
 
@@ -108,7 +121,8 @@ public class JDBCWrapper extends AbstractWrapper {
 
         if ((databaseURL != null) && (username != null) && (password != null) && (driver != null)) {
             useDefaultStorageManager = false;
-            sm = StorageManagerFactory.getInstance(driver, username, password, databaseURL, Main.DEFAULT_MAX_DB_CONNECTIONS);
+            sm = StorageManagerFactory.getInstance(driver, username, password, databaseURL,
+                    Main.DEFAULT_MAX_DB_CONNECTIONS);
             logger.warn("Using specified storage manager: " + databaseURL);
         } else {
             sm = Main.getDefaultStorage();
@@ -116,7 +130,8 @@ public class JDBCWrapper extends AbstractWrapper {
         }
 
         if (table_name == null) {
-            logger.warn("The > table-name < parameter is missing from the wrapper for VS " + this.getActiveAddressBean().getVirtualSensorName());
+            logger.warn("The > table-name < parameter is missing from the wrapper for VS "
+                    + this.getActiveAddressBean().getVirtualSensorName());
             return false;
         }
 
@@ -124,7 +139,8 @@ public class JDBCWrapper extends AbstractWrapper {
         boolean usePreviousCheckPoint = true;
         String time = addressBean.getPredicateValue("start-time");
         if (time == null) {
-            logger.warn("The > start-time < parameter is missing from the wrapper for VS " + this.getActiveAddressBean().getVirtualSensorName());
+            logger.warn("The > start-time < parameter is missing from the wrapper for VS "
+                    + this.getActiveAddressBean().getVirtualSensorName());
             return false;
         }
 
@@ -139,22 +155,23 @@ public class JDBCWrapper extends AbstractWrapper {
                 start_time = fmt.parseDateTime(time).getMillis();
                 latest_timed = start_time;
                 logger.warn("Mode: ISO => " + latest_timed);
-            }
-            catch (IllegalArgumentException e) {
-                logger.warn("The > start-time < parameter is malformed (looks like ISO8601) for VS " + this.getActiveAddressBean().getVirtualSensorName());
+            } catch (IllegalArgumentException e) {
+                logger.warn("The > start-time < parameter is malformed (looks like ISO8601) for VS "
+                        + this.getActiveAddressBean().getVirtualSensorName());
                 return false;
             }
         } else if (isLong(time)) {
             try {
                 latest_timed = Long.parseLong(time);
                 logger.warn("Mode: epoch => " + latest_timed);
-            }
-            catch (NumberFormatException e) {
-                logger.warn("The > start-time < parameter is malformed (looks like epoch) for VS " + this.getActiveAddressBean().getVirtualSensorName());
+            } catch (NumberFormatException e) {
+                logger.warn("The > start-time < parameter is malformed (looks like epoch) for VS "
+                        + this.getActiveAddressBean().getVirtualSensorName());
                 return false;
             }
         } else {
-            logger.warn("Incorrectly formatted > start-time < accepted values are: 'continue' (from latest element in destination table), iso-date (e.g. 2009-11-02T00:00:00.000+00:00), or epoch (e.g. 1257946505000)");
+            logger.warn(
+                    "Incorrectly formatted > start-time < accepted values are: 'continue' (from latest element in destination table), iso-date (e.g. 2009-11-02T00:00:00.000+00:00), or epoch (e.g. 1257946505000)");
             return false;
         }
 
@@ -167,11 +184,11 @@ public class JDBCWrapper extends AbstractWrapper {
         if (usePreviousCheckPoint) {
             logger.warn("trying to read latest timestamp from chekpoint file ... " + checkPointFile);
             try {
-                if (getLatestTimeStampFromCheckPoint() != 0) {
+                if (getLatestTimeStampFromCheckPoint() == 0) {
+                    logger.warn("wrong value for latest ts (" + getLatestTimeStampFromCheckPoint() + "), ignored");
+                } else {
                     latest_timed = getLatestTimeStampFromCheckPoint();
                     logger.warn("latest ts => " + latest_timed);
-                } else {
-                    logger.warn("wrong value for latest ts (" + getLatestTimeStampFromCheckPoint() + "), ignored");
                 }
             } catch (IOException e) {
                 logger.warn("Checkpoints couldn't be used due to IO exception.");
@@ -180,7 +197,6 @@ public class JDBCWrapper extends AbstractWrapper {
         }
 
         //////////////////
-
 
         Connection connection = null;
         try {
@@ -207,15 +223,28 @@ public class JDBCWrapper extends AbstractWrapper {
         return true;
     }
 
+    /**
+     * Retrieves the latest timestamp from the checkpoint file.
+     * 
+     * @return The latest timestamp from the checkpoint file.
+     * @throws IOException If an I/O error occurs while reading the file.
+     */
     public long getLatestTimeStampFromCheckPoint() throws IOException {
         String val = FileUtils.readFileToString(new File(checkPointFile), "UTF-8");
         long lastItem = 0;
-        if (val != null && val.trim().length() > 0){
+        if (val != null && val.trim().length() > 0) {
             lastItem = Long.parseLong(val.trim());
         }
         return lastItem;
     }
 
+    /**
+     * Executes the main logic of the JDBCWrapper in a separate thread.
+     * Retrieves data from the database using a specified query and processes it.
+     * The retrieved data is converted into StreamElements and sent to the
+     * postStreamElement method.
+     * The method also updates the checkpoint file with the latest timestamp.
+     */
     public void run() {
         DataEnumerator data;
 
@@ -231,11 +260,12 @@ public class JDBCWrapper extends AbstractWrapper {
         while (isActive()) {
             try {
                 conn = sm.getConnection();
-                StringBuilder query = new StringBuilder("select * from ").append(table_name).append(" where timed > " + latest_timed + " limit 0," + buffer_size);
+                StringBuilder query = new StringBuilder("select * from ").append(table_name)
+                        .append(" where timed > " + latest_timed + " limit 0," + buffer_size);
 
                 resultSet = sm.executeQueryWithResultSet(query, conn);
 
-                //logger.debug(query);
+                // logger.debug(query);
 
                 while (resultSet.next()) {
                     Serializable[] output = new Serializable[this.getOutputFormat().length];
@@ -243,8 +273,8 @@ public class JDBCWrapper extends AbstractWrapper {
                     long pk = resultSet.getLong(1);
                     long timed = resultSet.getLong(2);
 
-                    //logger.warn("pk => "+ pk);
-                    //logger.warn("timed => "+ timed);
+                    // logger.warn("pk => "+ pk);
+                    // logger.warn("timed => "+ timed);
 
                     for (int i = 0; i < dataFieldsLength; i++) {
 
@@ -275,19 +305,19 @@ public class JDBCWrapper extends AbstractWrapper {
                                 output[i] = resultSet.getBytes(i + 3);
                                 break;
                         }
-                        //logger.warn(i+" (type: "+dataFieldTypes[i]+" ) => "+output[i]);
+                        // logger.warn(i+" (type: "+dataFieldTypes[i]+" ) => "+output[i]);
                     }
 
                     StreamElement se = new StreamElement(dataFieldNames, dataFieldTypes, output, timed);
                     latest_timed = se.getTimeStamp();
 
-                    //logger.warn(" Latest => " + latest_timed);
+                    // logger.warn(" Latest => " + latest_timed);
 
                     this.postStreamElement(se);
 
                     updateCheckPointFile(latest_timed);
 
-                    //logger.warn(se);
+                    // logger.warn(se);
                 }
 
             } catch (java.io.IOException e) {
@@ -311,17 +341,23 @@ public class JDBCWrapper extends AbstractWrapper {
         FileUtils.writeStringToFile(new File(checkPointFile), Long.toString(timestamp), "UTF-8");
     }
 
+    /**
+     * Retrieves the latest processed timestamp from the database.
+     * 
+     * @return The latest processed timestamp, or -1 if an error occurs.
+     */
     public long getLatestProcessed() {
         DataEnumerator data;
         long latest = -1;
-        StringBuilder query = new StringBuilder("select max(timed) from ").append(this.getActiveAddressBean().getVirtualSensorName());
+        StringBuilder query = new StringBuilder("select max(timed) from ")
+                .append(this.getActiveAddressBean().getVirtualSensorName());
         try {
             data = sm.executeQuery(query, false);
             logger.warn("Running query " + query);
 
             while (data.hasMoreElements()) {
                 StreamElement se = data.nextElement();
-                if (se.getData("max(timed)") != null){
+                if (se.getData("max(timed)") != null) {
                     latest = (Long) se.getData("max(timed)");
                 }
                 logger.warn(" MAX ts = " + latest);
@@ -336,32 +372,51 @@ public class JDBCWrapper extends AbstractWrapper {
         return latest;
     }
 
-
+    /**
+     * Checks if the given time string is in ISO format.
+     *
+     * @param time the time string to be checked
+     * @return true if the time string is in ISO format, false otherwise
+     */
     public boolean isISOFormat(String time) {
-        //Example: 2009-11-02T00:00:00.000+00:00
+        // Example: 2009-11-02T00:00:00.000+00:00
         String regexMask = "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{3}[+-]\\d{2}:\\d{2}$";
         Pattern pattern = Pattern.compile(regexMask);
         Matcher matcher = pattern.matcher(time);
-        logger.debug("Testing... " + time + " <==> " + regexMask);
+        if(logger.isDebugEnabled()){
+            logger.debug("Testing... " + time + " <==> " + regexMask);
+        }
         if (matcher.find()) {
-            logger.debug(">>>>>    ISO FORMAT");
+            if(logger.isDebugEnabled()){
+                logger.debug(">>>>>    ISO FORMAT");
+            }
             return true;
         } else {
             return false;
-        }  
+        }
     }
 
+    /**
+     * Checks if a given string represents a long number.
+     *
+     * @param time the string to be checked
+     * @return true if the string represents a long number, false otherwise
+     */
     public boolean isLong(String time) {
 
         String regexMask = "^\\d+$";
         Pattern pattern = Pattern.compile(regexMask);
         Matcher matcher = pattern.matcher(time);
-        logger.debug("Testing... " + time + " <==> " + regexMask);
+        if(logger.isDebugEnabled()){
+            logger.debug("Testing... " + time + " <==> " + regexMask);
+        }
         if (matcher.find()) {
-            logger.debug(">>>>>    LONG number");
+            if(logger.isDebugEnabled()){
+                logger.debug(">>>>>    LONG number");
+            }
             return true;
         } else {
             return false;
-        }  
+        }
     }
 }

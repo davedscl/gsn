@@ -27,9 +27,6 @@ package ch.epfl.gsn.utils;
 
 import org.slf4j.LoggerFactory;
 
-import ch.epfl.gsn.utils.Pair;
-import ch.epfl.gsn.utils.Utils;
-
 import org.slf4j.Logger;
 
 import java.io.FileInputStream;
@@ -38,40 +35,57 @@ import java.util.Properties;
 
 public class Utils {
 
-    private static final transient Logger logger = LoggerFactory.getLogger(Utils.class);
+	private static final transient Logger logger = LoggerFactory.getLogger(Utils.class);
 
-    public static Properties loadProperties(String path) {
-        Properties properties = new Properties();
-        try {
-            properties.load(new FileInputStream(path));
-        } catch (IOException e) {
-            logger.warn("Unable to load the property file: " + path);
-            return null;
-        }
-        return properties;
-    }
-    
-    public static Pair<Boolean,Long> parseWindowSize(String s) throws NumberFormatException{
-		s = s.replace( " " , "" ).trim( ).toLowerCase( );
-		int mIndex = s.indexOf( "m" );
-		int hIndex = s.indexOf( "h" );
-		int sIndex = s.indexOf( "s" );
-		if ( mIndex < 0 && hIndex < 0 && sIndex < 0 ) {
-			return new Pair<Boolean,Long>(false,Long.parseLong(s));
+	/**
+	 * Loads properties from a file.
+	 *
+	 * @param path the path to the property file
+	 * @return the loaded properties, or null if the file cannot be loaded
+	 */
+	public static Properties loadProperties(String path) {
+		Properties properties = new Properties();
+		try {
+			properties.load(new FileInputStream(path));
+		} catch (IOException e) {
+			logger.warn("Unable to load the property file: " + path);
+			return null;
+		}
+		return properties;
+	}
+
+	/**
+	 * Parses a string representation of a window size and returns a Pair object
+	 * containing a boolean value indicating
+	 * whether the parsing was successful and the parsed window size in
+	 * milliseconds.
+	 *
+	 * @param s the string representation of the window size
+	 * @return a Pair object containing a boolean value indicating the success of
+	 *         parsing and the parsed window size
+	 * @throws NumberFormatException if the window size cannot be parsed
+	 */
+	public static Pair<Boolean, Long> parseWindowSize(String s) throws NumberFormatException {
+		s = s.replace(" ", "").trim().toLowerCase();
+		int mIndex = s.indexOf("m");
+		int hIndex = s.indexOf("h");
+		int sIndex = s.indexOf("s");
+		if (mIndex < 0 && hIndex < 0 && sIndex < 0) {
+			return new Pair<Boolean, Long>(false, Long.parseLong(s));
 		} else {
 			StringBuilder shs = new StringBuilder(s);
 			long value = 0;
-			if ( mIndex >= 0 && mIndex == shs.length() - 1){
-				value = Long.parseLong( shs.deleteCharAt( mIndex ).toString( ) ) * 60000;
-			} else if ( hIndex >= 0 && hIndex == shs.length() - 1){
-				value = Long.parseLong( shs.deleteCharAt( hIndex ).toString( ) ) * 3600000;
-			} else if ( sIndex >= 0 && sIndex == shs.length() - 1) {
-				value = Long.parseLong( shs.deleteCharAt( sIndex ).toString( ) ) * 1000;
-			}else{
-				throw new NumberFormatException("unable to pasre window size :"+shs);
-			} 
-			return new Pair<Boolean,Long>(true,value);
-		} 
-    }
+			if (mIndex >= 0 && mIndex == shs.length() - 1) {
+				value = Long.parseLong(shs.deleteCharAt(mIndex).toString()) * 60000;
+			} else if (hIndex >= 0 && hIndex == shs.length() - 1) {
+				value = Long.parseLong(shs.deleteCharAt(hIndex).toString()) * 3600000;
+			} else if (sIndex >= 0 && sIndex == shs.length() - 1) {
+				value = Long.parseLong(shs.deleteCharAt(sIndex).toString()) * 1000;
+			} else {
+				throw new NumberFormatException("unable to pasre window size :" + shs);
+			}
+			return new Pair<Boolean, Long>(true, value);
+		}
+	}
 
 }

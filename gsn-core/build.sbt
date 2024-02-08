@@ -22,14 +22,14 @@ libraryDependencies ++= Seq(
   "org.hibernate" % "hibernate-core" % "3.6.10.Final",
   "org.apache.httpcomponents" % "httpclient" % "4.3.2",
   "org.apache.commons" % "commons-email" % "1.3.2",
-  "commons-collections" % "commons-collections" % "3.2.2",
+  "commons-collections" % "commons-collections" % "3.2.1",
   "commons-io" % "commons-io" % "2.4",
-  "org.apache.logging.log4j" % "log4j-api" % "2.3.1",
-  "org.apache.logging.log4j" % "log4j-core" % "2.3.1",
-  "org.apache.logging.log4j" % "log4j-slf4j-impl" % "2.3.1",
-  "org.apache.logging.log4j" % "log4j-web" % "2.3.1",
+  "org.apache.logging.log4j" % "log4j-api" % "2.3",
+  "org.apache.logging.log4j" % "log4j-core" % "2.3",
+  "org.apache.logging.log4j" % "log4j-slf4j-impl" % "2.3",
+  "org.apache.logging.log4j" % "log4j-web" % "2.3",
   "net.sf.opencsv" % "opencsv" % "2.3",
-  "com.thoughtworks.xstream" % "xstream" % "1.4.18",
+  "com.thoughtworks.xstream" % "xstream" % "1.4.5",
   "org.antlr" % "stringtemplate" % "3.0",
   "commons-lang" % "commons-lang" % "2.6",
   "rome" % "rome" % "1.0",
@@ -113,5 +113,4 @@ EclipseKeys.projectFlavor := EclipseProjectFlavor.Java
 mainClass in Revolver.reStart := Some("ch.epfl.gsn.Main")
 
 Revolver.reStartArgs := Seq("../conf", "../virtual-sensors")
-
 

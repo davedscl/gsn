@@ -29,48 +29,62 @@ import ch.epfl.gsn.beans.DataField;
 import ch.epfl.gsn.beans.StreamElement;
 import ch.epfl.gsn.vsensor.ModellingVirtualSensor;
 
-
 /**
- * This class is the base class for all models that need to be linked to a virtual sensor for getting updated in real-time.
+ * This class is the base class for all models that need to be linked to a
+ * virtual sensor for getting updated in real-time.
  * A reference to the VS allows for accessing the other models if needed.
+ * 
  * @author jeberle
  *
  */
 public abstract class AbstractModel {
-	
+
 	protected DataField[] outputfield;
-	
+
 	protected ModellingVirtualSensor vs;
 
 	public DataField[] getOutputFields() {
 		return outputfield;
 	}
 
+	/**
+	 * Sets the output fields of the model.
+	 *
+	 * @param outputStructure the array of DataField objects representing the output
+	 *                        structure
+	 */
 	public void setOutputFields(DataField[] outputStructure) {
 		outputfield = outputStructure;
-		
+
 	}
 
-	public abstract StreamElement[] pushData(StreamElement streamElement,String origin);
+	public abstract StreamElement[] pushData(StreamElement streamElement, String origin);
 
 	public abstract StreamElement[] query(StreamElement params);
-	
 
 	public abstract void setParam(String k, String string);
 
 	public boolean initialize() {
 		return true;
 	}
-	
-	public void setVirtualSensor(ModellingVirtualSensor v){
+
+	/**
+	 * Sets the virtual sensor for the model.
+	 * 
+	 * @param v the virtual sensor to be set
+	 */
+	public void setVirtualSensor(ModellingVirtualSensor v) {
 		vs = v;
 	}
-	
-	public ModellingVirtualSensor getVirtualSensor(){
-		
+
+	/**
+	 * Returns the ModellingVirtualSensor associated with this AbstractModel.
+	 *
+	 * @return the ModellingVirtualSensor associated with this AbstractModel
+	 */
+	public ModellingVirtualSensor getVirtualSensor() {
+
 		return vs;
 	}
-	
-	
-	
+
 }

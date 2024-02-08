@@ -57,20 +57,34 @@ public class HibernateStorage implements VirtualSensorStorage {
 
     private static final int PAGE_SIZE = 1000;
 
-    public static HibernateStorage newInstance(DBConnectionInfo dbInfo, String identifier, DataField[] structure, boolean unique) {
+    /**
+     * Creates a new instance of HibernateStorage.
+     * 
+     * @param dbInfo     the DBConnectionInfo object containing the database
+     *                   connection information
+     * @param identifier the identifier for the HibernateStorage instance
+     * @param structure  an array of DataField objects representing the structure of
+     *                   the storage
+     * @param unique     a boolean value indicating whether the storage should
+     *                   enforce uniqueness constraints
+     * @return a new instance of HibernateStorage
+     */
+    public static HibernateStorage newInstance(DBConnectionInfo dbInfo, String identifier, DataField[] structure,
+            boolean unique) {
         try {
             return new HibernateStorage(dbInfo, identifier, structure, unique);
-        }
-        catch (RuntimeException e) {
+        } catch (RuntimeException e) {
             logger.error(e.getMessage());
             return null;
         }
     }
 
-    private HibernateStorage(DBConnectionInfo dbInfo, String identifier, DataField[] structure, boolean unique) throws RuntimeException {
+    private HibernateStorage(DBConnectionInfo dbInfo, String identifier, DataField[] structure, boolean unique)
+            throws RuntimeException {
         String em = generateEntityMapping(identifier, structure, unique);
-        this.sf = HibernateUtil.getSessionFactory(dbInfo.getDriverClass(), dbInfo.getUrl(), dbInfo.getUserName(), dbInfo.getPassword(), em);
-        if (this.sf == null){
+        this.sf = HibernateUtil.getSessionFactory(dbInfo.getDriverClass(), dbInfo.getUrl(), dbInfo.getUserName(),
+                dbInfo.getPassword(), em);
+        if (this.sf == null) {
             throw new RuntimeException("Unable to instanciate the Storage for:" + identifier);
         }
         this.identifier = identifier.toLowerCase();
@@ -81,13 +95,19 @@ public class HibernateStorage implements VirtualSensorStorage {
         return true;
     }
 
-
+    /**
+     * Saves a StreamElement object to the database and returns the generated
+     * identifier.
+     *
+     * @param se the StreamElement object to be saved
+     * @return the generated identifier of the saved object
+     * @throws GSNRuntimeException if an error occurs while saving the object
+     */
     public Serializable saveStreamElement(StreamElement se) throws GSNRuntimeException {
-        // Create the dynamic map 
+        // Create the dynamic map
         try {
             return storeElement(se2dm(se));
-        }
-        catch (org.hibernate.exception.ConstraintViolationException e) {
+        } catch (org.hibernate.exception.ConstraintViolationException e) {
             StringBuilder sb = new StringBuilder();
             sb.append("Error occurred on inserting data to the database, an stream element dropped due to: ")
                     .append(e.getMessage())
@@ -96,12 +116,19 @@ public class HibernateStorage implements VirtualSensorStorage {
                     .append(")");
             logger.warn(sb.toString());
             throw new GSNRuntimeException(e.getMessage());
-        }
-        catch (RuntimeException e) {
+        } catch (RuntimeException e) {
             throw new GSNRuntimeException(e.getMessage());
         }
     }
 
+    /**
+     * Retrieves a StreamElement from the database based on the provided primary
+     * key.
+     *
+     * @param pk the primary key of the StreamElement to retrieve
+     * @return the retrieved StreamElement object
+     * @throws GSNRuntimeException if an error occurs during the retrieval process
+     */
     public StreamElement getStreamElement(Serializable pk) throws GSNRuntimeException {
         Transaction tx = null;
         try {
@@ -112,9 +139,9 @@ public class HibernateStorage implements VirtualSensorStorage {
             return dm2se(dm);
         } catch (RuntimeException e) {
             try {
-                if (tx != null){
+                if (tx != null) {
                     tx.rollback();
-                }                   
+                }
             } catch (RuntimeException ex) {
                 logger.error("Couldn't roll back transaction.");
             }
@@ -122,6 +149,12 @@ public class HibernateStorage implements VirtualSensorStorage {
         }
     }
 
+    /**
+     * Returns the count of stream elements in the storage.
+     *
+     * @return The count of stream elements.
+     * @throws GSNRuntimeException if an error occurs during the operation.
+     */
     public long countStreamElement() throws GSNRuntimeException {
         Transaction tx = null;
         try {
@@ -135,9 +168,9 @@ public class HibernateStorage implements VirtualSensorStorage {
 
         } catch (RuntimeException e) {
             try {
-                if (tx != null){
+                if (tx != null) {
                     tx.rollback();
-                }                   
+                }
             } catch (RuntimeException ex) {
                 logger.error("Couldn't roll back transaction.");
             }
@@ -145,16 +178,42 @@ public class HibernateStorage implements VirtualSensorStorage {
         }
     }
 
-    public DataEnumeratorIF getStreamElements(int pageSize, Order order, Criterion[] crits, int maxResults) throws GSNRuntimeException {
+    /**
+     * Retrieves a stream of elements from the storage.
+     *
+     * @param pageSize   the number of elements to retrieve per page
+     * @param order      the order in which the elements should be retrieved
+     * @param crits      an array of criteria to filter the elements
+     * @param maxResults the maximum number of elements to retrieve
+     * @return a DataEnumeratorIF object representing the stream of elements
+     * @throws GSNRuntimeException if an error occurs while retrieving the elements
+     */
+    public DataEnumeratorIF getStreamElements(int pageSize, Order order, Criterion[] crits, int maxResults)
+            throws GSNRuntimeException {
         return new PaginatedDataEnumerator(pageSize, order, crits, maxResults);
     }
 
+    /**
+     * Retrieves a stream of elements from the storage.
+     *
+     * @param pageSize the number of elements to retrieve per page
+     * @param order    the order in which the elements should be retrieved
+     * @param crits    the criteria to filter the elements
+     * @return a DataEnumeratorIF object representing the stream of elements
+     * @throws GSNRuntimeException if an error occurs during the retrieval process
+     */
     public DataEnumeratorIF getStreamElements(int pageSize, Order order, Criterion[] crits) throws GSNRuntimeException {
         return getStreamElements(pageSize, order, crits, -1);
     }
 
-    //
-
+    /**
+     * Stores an element in the database using Hibernate.
+     *
+     * @param dm A Map representing the data to be stored in the database.
+     * @return A Serializable representing the primary key of the stored element.
+     * @throws RuntimeException If an error occurs during the transaction, and the
+     *                          transaction cannot be rolled back.
+     */
     private Serializable storeElement(Map dm) {
         Transaction tx = null;
         try {
@@ -165,7 +224,7 @@ public class HibernateStorage implements VirtualSensorStorage {
             return pk;
         } catch (RuntimeException e) {
             try {
-                if (tx != null){
+                if (tx != null) {
                     tx.rollback();
                 }
             } catch (RuntimeException ex) {
@@ -175,16 +234,24 @@ public class HibernateStorage implements VirtualSensorStorage {
         }
     }
 
+    /**
+     * This method is called by the garbage collector when the object is no longer
+     * reachable.
+     * It is used to perform any necessary cleanup operations before the object is
+     * destroyed.
+     * In this case, it closes the Hibernate session factory if it is not null.
+     * 
+     * @throws Throwable if an error occurs during finalization
+     */
     protected void finalize() throws Throwable {
         try {
-            if (sf != null){
+            if (sf != null) {
                 HibernateUtil.closeSessionFactory(sf);
-            }  
+            }
         } finally {
             super.finalize();
         }
     }
-
 
     //
 
@@ -216,33 +283,52 @@ public class HibernateStorage implements VirtualSensorStorage {
         return null;
     }
 
+    /**
+     * Converts a map of data fields to a StreamElement object.
+     * 
+     * @param dm The map of data fields.
+     * @return The converted StreamElement object.
+     */
     private StreamElement dm2se(Map<String, Serializable> dm) {
         ArrayList<Serializable> data = new ArrayList<Serializable>();
         long timed = (Long) dm.get("timed");
         for (DataField df : structure) {
-            if (!"timed".equalsIgnoreCase(df.getName())){
+            if (!"timed".equalsIgnoreCase(df.getName())) {
                 data.add(dm.get(df.getName()));
-            }               
+            }
         }
-        return new StreamElement(structure, data.toArray(new Serializable[]{data.size()}), timed);
+        return new StreamElement(structure, data.toArray(new Serializable[] { data.size() }), timed);
     }
 
+    /**
+     * Converts a StreamElement object to a map of key-value pairs.
+     * The "timed" field is included as a key-value pair in the map.
+     * All other fields in the StreamElement object are also included as key-value
+     * pairs in the map.
+     * 
+     * @param se The StreamElement object to be converted.
+     * @return A map of key-value pairs representing the StreamElement object.
+     */
     private Map<String, Serializable> se2dm(StreamElement se) {
         Map<String, Serializable> dm = new HashMap<String, Serializable>();
         dm.put("timed", se.getTimeStamp());
         for (String fieldName : se.getFieldNames()) {
-            if (!"timed".equalsIgnoreCase(fieldName)){
+            if (!"timed".equalsIgnoreCase(fieldName)) {
                 dm.put(fieldName, se.getData(fieldName));
-            }     
+            }
         }
         return dm;
     }
 
     /**
-     * Create the Hibernate mapping configuration file for the specified virtual sensor, according to the structure.
-     * The <code>pk</code> and <code>timed</code> are added by default to the mapping. Moreover, an index on
-     * the <code>timed</code> field is created. Finally, an optional <code>UNIQUE</code> clause is added to the
-     * <code>timed</code> column, iff the parameter <code>unique</code> is set to <code>true</code>.
+     * Create the Hibernate mapping configuration file for the specified virtual
+     * sensor, according to the structure.
+     * The <code>pk</code> and <code>timed</code> are added by default to the
+     * mapping. Moreover, an index on
+     * the <code>timed</code> field is created. Finally, an optional
+     * <code>UNIQUE</code> clause is added to the
+     * <code>timed</code> column, iff the parameter <code>unique</code> is set to
+     * <code>true</code>.
      *
      * @param identifier
      * @param structure
@@ -260,7 +346,7 @@ public class HibernateStorage implements VirtualSensorStorage {
                 .append("\" table=\"")
                 .append(identifier.toLowerCase())
                 .append("\">\n");
-        //sb.append("<cache usage=\"read-only\"/>");
+        // sb.append("<cache usage=\"read-only\"/>");
         // PK field
         sb.append("<id type=\"long\" column=\"PK\" name=\"pk\" >\n");
         sb.append("<generator class=\"native\"/>\n");
@@ -317,30 +403,32 @@ public class HibernateStorage implements VirtualSensorStorage {
             this.order = order;
             this.crits = crits;
             currentPage = 0;
-            pci = null;             //page content iterator
-            if (maxResults == 0){
+            pci = null; // page content iterator
+            if (maxResults == 0) {
                 close();
-            }       
+            }
             hasMoreElements();
         }
 
         /**
-         * This method checks if there is one or more {@link ch.epfl.gsn.beans.StreamElement} available in the DataEnumerator.
+         * This method checks if there is one or more
+         * {@link ch.epfl.gsn.beans.StreamElement} available in the DataEnumerator.
          * If the current page is empty, it tries to load the next page.
+         * 
          * @return
          */
         public boolean hasMoreElements() {
 
             // Check if the DataEnumerator is closed
-            if (closed){
+            if (closed) {
                 return false;
             }
 
             // Check if there is still data in the current pageContent
-            if (pci != null && pci.hasNext()){
+            if (pci != null && pci.hasNext()) {
                 return true;
             }
-                
+
             // Compute the next number of elements to fetch
             int offset = currentPage * pageSize;
             int mr = pageSize;
@@ -372,36 +460,42 @@ public class HibernateStorage implements VirtualSensorStorage {
 
             } catch (RuntimeException e) {
                 try {
-                    if (tx != null){
+                    if (tx != null) {
                         tx.rollback();
-                    }    
+                    }
                 } catch (RuntimeException ex) {
                     logger.error("Couldn't roll back transaction.");
                 }
                 throw e;
             }
-            if(pci != null &&  pci.hasNext()) {
+            if (pci != null && pci.hasNext()) {
                 return true;
-            }
-            else {
+            } else {
                 close();
                 return false;
             }
         }
 
+        /**
+         * Retrieves the next StreamElement from the DataEnumerator.
+         *
+         * @return the next StreamElement
+         * @throws IndexOutOfBoundsException if there are no more StreamElements or if
+         *                                   the DataEnumerator is closed
+         */
         public StreamElement nextElement() throws RuntimeException {
-            if ( ! hasMoreElements()){
-                throw new IndexOutOfBoundsException("The DataEnumerator has no more StreamElement or is closed."); 
-            } else {
+            if (hasMoreElements()) {
                 return dm2se(pci.next());
-            }   
+            } else {
+                throw new IndexOutOfBoundsException("The DataEnumerator has no more StreamElement or is closed.");
+            }
         }
 
         public void close() {
-            if (! closed){
+            if (!closed) {
                 closed = true;
             }
-                 
+
         }
     }
 }

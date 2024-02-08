@@ -35,27 +35,36 @@ import java.util.Vector;
  */
 public abstract class AbstractHCIQueryWithoutAnswer extends AbstractHCIQuery {
 
+   /**
+    * Represents an abstract HCI query without an answer.
+    * This class extends the base HCIQuery class and provides a constructor to
+    * initialize the query.
+    *
+    * @param Name               the name of the query
+    * @param queryDescription   the description of the query
+    * @param paramsDescriptions an array of descriptions for the query parameters
+    */
    public AbstractHCIQueryWithoutAnswer(String Name, String queryDescription, String[] paramsDescriptions) {
       super(Name, queryDescription, paramsDescriptions);
    }
 
    // we usually dont expect an answer
-   public int getWaitTime ( Vector < Object > params ) {
+   public int getWaitTime(Vector<Object> params) {
       // TODO Auto-generated method stub
       return NO_WAIT_TIME;
    }
-   
-   /* 
-    * By default we dont expect an answer. 
+
+   /*
+    * By default we dont expect an answer.
     */
-   public boolean needsAnswer ( Vector < Object > params ) {
+   public boolean needsAnswer(Vector<Object> params) {
       return false;
    }
-   
+
    /*
     * No answer by default so this is a placeholder method.
     */
    public Object[] getAnswers(byte[] rawAnswer) {
-	   return null;
+      return null;
    }
 }

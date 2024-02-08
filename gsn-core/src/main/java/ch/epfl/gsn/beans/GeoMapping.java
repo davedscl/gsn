@@ -6,9 +6,10 @@ public class GeoMapping {
 	public Double latitude;
 	public Double altitude;
 	public String comment;
-	
-	public GeoMapping() {}
-	
+
+	public GeoMapping() {
+	}
+
 	public GeoMapping(Integer position, Double longitude, Double latitude, Double altitude, String comment) {
 		this.position = position;
 		this.longitude = longitude;

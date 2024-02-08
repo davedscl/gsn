@@ -54,7 +54,8 @@ import org.slf4j.Logger;
 public class TupleBasedSlidingHandler implements SlidingHandler {
 
 	private static final transient Logger logger = LoggerFactory.getLogger(TupleBasedSlidingHandler.class);
-	private List<StreamSource> streamSources; //only holds WindowType.TUPLE_BASED_SLIDE_ON_EACH_TUPLE types of stream sources
+	private List<StreamSource> streamSources; // only holds WindowType.TUPLE_BASED_SLIDE_ON_EACH_TUPLE types of stream
+												// sources
 	private Map<StreamSource, Long> slidingHashMap;
 	private AbstractWrapper wrapper;
 
@@ -64,21 +65,47 @@ public class TupleBasedSlidingHandler implements SlidingHandler {
 		this.wrapper = wrapper;
 	}
 
+	/**
+	 * Adds a stream source to the sliding handler.
+	 * If the windowing type of the stream source is not
+	 * TUPLE_BASED_SLIDE_ON_EACH_TUPLE,
+	 * the method calculates the slide value based on the parsed slide value and
+	 * parsed storage size of the stream source.
+	 * If the windowing type is TUPLE_BASED, the slide value is calculated as
+	 * parsedSlideValue - parsedStorageSize.
+	 * If the windowing type is neither TUPLE_BASED nor
+	 * TUPLE_BASED_SLIDE_ON_EACH_TUPLE, the slide value is set to 0.
+	 * If the windowing type is TUPLE_BASED_SLIDE_ON_EACH_TUPLE, the stream source
+	 * is added to the list of stream sources.
+	 * Finally, the method initializes the SQLViewQueryRewriter with the stream
+	 * source.
+	 *
+	 * @param streamSource the stream source to be added
+	 */
 	public void addStreamSource(StreamSource streamSource) {
-		if (streamSource.getWindowingType() != WindowType.TUPLE_BASED_SLIDE_ON_EACH_TUPLE) {
+		if (streamSource.getWindowingType() == WindowType.TUPLE_BASED_SLIDE_ON_EACH_TUPLE) {
+			streamSources.add(streamSource);
+		} else {
 			if (streamSource.getWindowingType() == WindowType.TUPLE_BASED) {
-				slidingHashMap.put(streamSource, streamSource.getParsedSlideValue() - streamSource.getParsedStorageSize());
+				slidingHashMap.put(streamSource,
+						streamSource.getParsedSlideValue() - streamSource.getParsedStorageSize());
 			} else {
 				slidingHashMap.put(streamSource, 0L);
 			}
-		} else {
-			streamSources.add(streamSource);
 		}
 		SQLViewQueryRewriter rewriter = new TupleBasedSQLViewQueryRewriter();
 		rewriter.setStreamSource(streamSource);
 		rewriter.initialize();
 	}
 
+	/**
+	 * Checks if data is available for processing based on the given stream element.
+	 * This method iterates over the stream sources and sliding hash map to
+	 * determine if data is available.
+	 * 
+	 * @param streamElement The stream element to check for data availability.
+	 * @return true if data is available, false otherwise.
+	 */
 	public boolean dataAvailable(StreamElement streamElement) {
 		boolean toReturn = false;
 		synchronized (streamSources) {
@@ -99,13 +126,22 @@ public class TupleBasedSlidingHandler implements SlidingHandler {
 		return toReturn;
 	}
 
+	/**
+	 * Retrieves the cutting condition for the sliding window.
+	 * The cutting condition is determined based on the maximum tuple count and
+	 * maximum window size
+	 * of the stream sources in the sliding window.
+	 * 
+	 * @return the cutting condition as a string in the format "pk < value"
+	 */
 	public String getCuttingCondition() {
 		long pk1 = -1;
 		long pk2 = -1;
 		long maxTupleCount = 0;
 		long maxWindowSize = 0;
 
-		//WindowType.TUPLE_BASED_SLIDE_ON_EACH_TUPLE sliding windows are saved in streamSources list 
+		// WindowType.TUPLE_BASED_SLIDE_ON_EACH_TUPLE sliding windows are saved in
+		// streamSources list
 		synchronized (streamSources) {
 			for (StreamSource streamSource : streamSources) {
 				maxTupleCount = Math.max(maxTupleCount, streamSource.getParsedStorageSize());
@@ -115,7 +151,8 @@ public class TupleBasedSlidingHandler implements SlidingHandler {
 		synchronized (slidingHashMap) {
 			for (StreamSource streamSource : slidingHashMap.keySet()) {
 				if (streamSource.getWindowingType() == WindowType.TUPLE_BASED) {
-					maxTupleCount = Math.max(maxTupleCount, streamSource.getParsedStorageSize() + streamSource.getParsedSlideValue());
+					maxTupleCount = Math.max(maxTupleCount,
+							streamSource.getParsedStorageSize() + streamSource.getParsedSlideValue());
 				} else {
 					maxTupleCount = Math.max(maxTupleCount, streamSource.getParsedSlideValue());
 					maxWindowSize = Math.max(maxWindowSize, streamSource.getParsedStorageSize());
@@ -125,20 +162,28 @@ public class TupleBasedSlidingHandler implements SlidingHandler {
 
 		if (maxTupleCount > 0) {
 			StringBuilder query = new StringBuilder();
-			if (Main.getWindowStorage().isH2() || Main.getWindowStorage().isMysqlDB() || Main.getWindowStorage().isPostgres()) {
+			if (Main.getWindowStorage().isH2() || Main.getWindowStorage().isMysqlDB()
+					|| Main.getWindowStorage().isPostgres()) {
 				query.append(" select pk from ").append(wrapper.getDBAliasInStr());
 				query.append(" order by pk desc limit 1 offset ").append(maxTupleCount - 1);
 			} else if (Main.getWindowStorage().isSqlServer()) {
-				query.append(" select min(pk) from (select top ").append(maxTupleCount).append(" * ").append(" from ").append(
-						wrapper.getDBAliasInStr()).append(" order by pk desc )as X  ");
-			}else if (Main.getWindowStorage().isOracle()) {
-				query.append(" select pk from (select pk from ").append(Main.getWindowStorage().tableNameGeneratorInString(wrapper.getDBAliasInStr()));
+				query.append(" select min(pk) from (select top ").append(maxTupleCount).append(" * ").append(" from ")
+						.append(
+								wrapper.getDBAliasInStr())
+						.append(" order by pk desc )as X  ");
+			} else if (Main.getWindowStorage().isOracle()) {
+				query.append(" select pk from (select pk from ")
+						.append(Main.getWindowStorage().tableNameGeneratorInString(wrapper.getDBAliasInStr()));
 				query.append(" order by pk desc) where rownum = ").append(maxTupleCount);
 			}
-			logger.debug("Query1 for getting oldest timestamp : " + query);
+			if(logger.isDebugEnabled()){
+				logger.debug("Query1 for getting oldest timestamp : " + query);
+			}
+			
 			Connection conn = null;
 			try {
-				ResultSet resultSet = Main.getWindowStorage().executeQueryWithResultSet(query,conn=Main.getWindowStorage().getConnection());
+				ResultSet resultSet = Main.getWindowStorage().executeQueryWithResultSet(query,
+						conn = Main.getWindowStorage().getConnection());
 				if (resultSet.next()) {
 					pk1 = resultSet.getLong(1);
 				} else {
@@ -153,11 +198,18 @@ public class TupleBasedSlidingHandler implements SlidingHandler {
 
 		if (maxWindowSize > 0) {
 			StringBuilder query = new StringBuilder();
-			query.append(" select min(pk) from ").append(wrapper.getDBAliasInStr()).append(" where timed > (select max(timed) from ").append(wrapper.getDBAliasInStr()).append(") - ").append(maxWindowSize);
-			logger.debug("Query2 for getting oldest timestamp : " + query);
+			query.append(" select min(pk) from ").append(wrapper.getDBAliasInStr())
+					.append(" where timed > (select max(timed) from ").append(wrapper.getDBAliasInStr()).append(") - ")
+					.append(maxWindowSize);
+			
+			if(logger.isDebugEnabled()){
+				logger.debug("Query2 for getting oldest timestamp : " + query);
+			}
+			
 			Connection conn = null;
 			try {
-				ResultSet resultSet = Main.getWindowStorage().executeQueryWithResultSet(query,conn=Main.getWindowStorage().getConnection());
+				ResultSet resultSet = Main.getWindowStorage().executeQueryWithResultSet(query,
+						conn = Main.getWindowStorage().getConnection());
 				if (resultSet.next()) {
 					pk2 = resultSet.getLong(1);
 				} else {
@@ -176,12 +228,22 @@ public class TupleBasedSlidingHandler implements SlidingHandler {
 		return "pk < " + ((pk1 == -1) ? pk2 : pk1);
 	}
 
+	/**
+	 * Removes a stream source from the sliding handler.
+	 * 
+	 * @param streamSource the stream source to be removed
+	 */
 	public void removeStreamSource(StreamSource streamSource) {
 		streamSources.remove(streamSource);
 		slidingHashMap.remove(streamSource);
 		streamSource.getQueryRewriter().dispose();
 	}
 
+	/**
+	 * Disposes the resources used by the TupleBasedSlidingHandler.
+	 * This method releases any acquired resources and clears the internal data
+	 * structures.
+	 */
 	public void dispose() {
 		synchronized (streamSources) {
 			for (StreamSource streamSource : streamSources) {
@@ -197,12 +259,29 @@ public class TupleBasedSlidingHandler implements SlidingHandler {
 		}
 	}
 
+	/**
+	 * Checks if the given stream source is of tuple-based windowing type.
+	 * 
+	 * @param streamSource the stream source to check
+	 * @return true if the stream source is of tuple-based windowing type, false
+	 *         otherwise
+	 */
 	public boolean isInterestedIn(StreamSource streamSource) {
 		return WindowType.isTupleBased(streamSource.getWindowingType());
 	}
 
 	private class TupleBasedSQLViewQueryRewriter extends SQLViewQueryRewriter {
 
+		/**
+		 * Overrides the createViewSQL method to generate a SQL query for creating a
+		 * view based on the configured StreamSource.
+		 * If a cached SQL query exists, it is returned. Otherwise, a new query is
+		 * generated and cached.
+		 *
+		 * @return A CharSequence representing the SQL query for creating the view.
+		 * @throws GSNRuntimeException If certain conditions are not met, such as a null
+		 *                             wrapper object or failed validation.
+		 */
 		@Override
 		public CharSequence createViewSQL() {
 			if (cachedSqlQuery != null) {
@@ -212,26 +291,29 @@ public class TupleBasedSlidingHandler implements SlidingHandler {
 				throw new GSNRuntimeException("Wrapper object is null, most probably a bug, please report it !");
 			}
 			if (streamSource.validate() == false) {
-				throw new GSNRuntimeException("Validation of this object the stream source failed, please check the logs.");
+				throw new GSNRuntimeException(
+						"Validation of this object the stream source failed, please check the logs.");
 			}
 			CharSequence wrapperAlias = streamSource.getWrapper().getDBAliasInStr();
 			long windowSize = streamSource.getParsedStorageSize();
 			if (streamSource.getSamplingRate() == 0 || windowSize == 0) {
 				return cachedSqlQuery = new StringBuilder("select * from ").append(wrapperAlias).append(" where 1=0");
 			}
-			TreeMap<CharSequence, CharSequence> rewritingMapping = new TreeMap<CharSequence, CharSequence>(new CaseInsensitiveComparator());
+			TreeMap<CharSequence, CharSequence> rewritingMapping = new TreeMap<CharSequence, CharSequence>(
+					new CaseInsensitiveComparator());
 			rewritingMapping.put("wrapper", wrapperAlias);
-			
+
 			String sqlQuery = streamSource.getSqlQuery();
-            StringBuilder toReturn = new StringBuilder();
-            
-            int fromIndex = sqlQuery.indexOf(" from ");
-            if(Main.getWindowStorage().isH2() && fromIndex > -1){
-            	toReturn.append(sqlQuery.substring(0, fromIndex + 6)).append(" (select * from ").append(sqlQuery.substring(fromIndex + 6));
-            }else{
-            	toReturn.append(sqlQuery);
-            }
-			
+			StringBuilder toReturn = new StringBuilder();
+
+			int fromIndex = sqlQuery.indexOf(" from ");
+			if (Main.getWindowStorage().isH2() && fromIndex > -1) {
+				toReturn.append(sqlQuery.substring(0, fromIndex + 6)).append(" (select * from ")
+						.append(sqlQuery.substring(fromIndex + 6));
+			} else {
+				toReturn.append(sqlQuery);
+			}
+
 			if (streamSource.getSqlQuery().toLowerCase().indexOf(" where ") < 0) {
 				toReturn.append(" where ");
 			} else {
@@ -240,79 +322,114 @@ public class TupleBasedSlidingHandler implements SlidingHandler {
 
 			if (streamSource.getSamplingRate() != 1) {
 				if (Main.getWindowStorage().isH2()) {
-					toReturn.append("( timed - (timed / 100) * 100 < ").append(streamSource.getSamplingRate() * 100).append(") and ");
+					toReturn.append("( timed - (timed / 100) * 100 < ").append(streamSource.getSamplingRate() * 100)
+							.append(") and ");
 				} else {
-					toReturn.append("( mod( timed , 100)< ").append(streamSource.getSamplingRate() * 100).append(") and ");
+					toReturn.append("( mod( timed , 100)< ").append(streamSource.getSamplingRate() * 100)
+							.append(") and ");
 				}
 			}
 			WindowType windowingType = streamSource.getWindowingType();
 			if (windowingType == WindowType.TUPLE_BASED_SLIDE_ON_EACH_TUPLE) {
 				if (Main.getWindowStorage().isMysqlDB() || Main.getWindowStorage().isPostgres()) {
-					toReturn.append("pk >= (select pk from ").append(wrapperAlias).append(" order by pk desc limit 1 offset ").append(windowSize - 1).append(" ) order by pk desc ");
+					toReturn.append("pk >= (select pk from ").append(wrapperAlias)
+							.append(" order by pk desc limit 1 offset ").append(windowSize - 1)
+							.append(" ) order by pk desc ");
 				} else if (Main.getWindowStorage().isH2()) {
-					toReturn.append("pk >= (select pk from ").append(wrapperAlias).append(" order by pk desc limit 1 offset ").append(windowSize - 1).append(" ) order by pk desc ");
+					toReturn.append("pk >= (select pk from ").append(wrapperAlias)
+							.append(" order by pk desc limit 1 offset ").append(windowSize - 1)
+							.append(" ) order by pk desc ");
 				} else if (Main.getWindowStorage().isSqlServer()) {
-					toReturn.append("pk >= (select min(pk) from (select TOP ").append(windowSize).append(" pk from ").append(
-							wrapperAlias).append(" order by pk desc ) as y )");
-				}else if (Main.getWindowStorage().isOracle()) {
-					toReturn.append("(pk >= (select pk from (select pk from "+Main.getWindowStorage().tableNameGeneratorInString(wrapperAlias)+" order by pk desc ) where rownum="+windowSize+") )");
-				}else {
+					toReturn.append("pk >= (select min(pk) from (select TOP ").append(windowSize).append(" pk from ")
+							.append(
+									wrapperAlias)
+							.append(" order by pk desc ) as y )");
+				} else if (Main.getWindowStorage().isOracle()) {
+					toReturn.append("(pk >= (select pk from (select pk from "
+							+ Main.getWindowStorage().tableNameGeneratorInString(wrapperAlias)
+							+ " order by pk desc ) where rownum=" + windowSize + ") )");
+				} else {
 					logger.error("Not supported DB!");
 				}
 			} else {
-				CharSequence viewHelperTableName =Main.getWindowStorage().tableNameGeneratorInString(SQLViewQueryRewriter.VIEW_HELPER_TABLE);
+				CharSequence viewHelperTableName = Main.getWindowStorage()
+						.tableNameGeneratorInString(SQLViewQueryRewriter.VIEW_HELPER_TABLE);
 				if (windowingType == WindowType.TUPLE_BASED) {
 					if (Main.getWindowStorage().isMysqlDB() || Main.getWindowStorage().isPostgres()) {
 						toReturn.append("timed <= (select timed from ").append(viewHelperTableName).append(
-						" where U_ID='").append(streamSource.getUIDStr()).append("') and timed >= (select timed from ");
+								" where U_ID='").append(streamSource.getUIDStr())
+								.append("') and timed >= (select timed from ");
 						toReturn.append(wrapperAlias).append(" where timed <= (select timed from ");
 						toReturn.append(viewHelperTableName).append(" where U_ID='").append(streamSource.getUIDStr());
-						toReturn.append("') ").append(" order by timed desc limit 1 offset ").append(windowSize - 1).append(" )");
+						toReturn.append("') ").append(" order by timed desc limit 1 offset ").append(windowSize - 1)
+								.append(" )");
 						toReturn.append(" order by timed desc ");
 					} else if (Main.getWindowStorage().isH2()) {
 						toReturn.append("timed <= (select timed from ").append(viewHelperTableName).append(
-						" where U_ID='").append(streamSource.getUIDStr()).append("') and timed >= (select distinct(timed) from ");
-						toReturn.append(wrapperAlias).append(" where timed in (select timed from ").append(wrapperAlias).append(
-						" where timed <= (select timed from ");
+								" where U_ID='").append(streamSource.getUIDStr())
+								.append("') and timed >= (select distinct(timed) from ");
+						toReturn.append(wrapperAlias).append(" where timed in (select timed from ").append(wrapperAlias)
+								.append(
+										" where timed <= (select timed from ");
 						toReturn.append(viewHelperTableName).append(" where U_ID='").append(streamSource.getUIDStr());
-						toReturn.append("') ").append(" order by timed desc limit 1 offset ").append(windowSize - 1).append(" ))");
+						toReturn.append("') ").append(" order by timed desc limit 1 offset ").append(windowSize - 1)
+								.append(" ))");
 						toReturn.append(" order by timed desc ");
 					} else if (Main.getWindowStorage().isSqlServer()) {
-						toReturn.append("timed in (select TOP ").append(windowSize).append(" timed from ").append(wrapperAlias).append(
-						" where timed <= (select timed from ").append(viewHelperTableName).append(" where U_ID='").append(streamSource.getUIDStr()).append("') order by timed desc) ");
-					}else if (Main.getWindowStorage().isOracle()) {
-						toReturn.append("timed <= (select timed from ").append(Main.getWindowStorage().tableNameGeneratorInString(viewHelperTableName)).append(
-						" where U_ID='").append(streamSource.getUIDStr()).append("') and timed >= (select timed from ");
+						toReturn.append("timed in (select TOP ").append(windowSize).append(" timed from ")
+								.append(wrapperAlias).append(
+										" where timed <= (select timed from ")
+								.append(viewHelperTableName).append(" where U_ID='").append(streamSource.getUIDStr())
+								.append("') order by timed desc) ");
+					} else if (Main.getWindowStorage().isOracle()) {
+						toReturn.append("timed <= (select timed from ")
+								.append(Main.getWindowStorage().tableNameGeneratorInString(viewHelperTableName)).append(
+										" where U_ID='")
+								.append(streamSource.getUIDStr()).append("') and timed >= (select timed from ");
 						toReturn.append(wrapperAlias).append(" where timed <= (select * from (select timed from ");
-						toReturn.append(viewHelperTableName).append(" where U_ID='").append(Main.getWindowStorage().tableNameGeneratorInString(streamSource.getUIDStr()));
-						toReturn.append("' order by timed desc  ) where rownum = "+windowSize+")  ").append(" )");
+						toReturn.append(viewHelperTableName).append(" where U_ID='")
+								.append(Main.getWindowStorage().tableNameGeneratorInString(streamSource.getUIDStr()));
+						toReturn.append("' order by timed desc  ) where rownum = " + windowSize + ")  ").append(" )");
 						toReturn.append(" order by timed desc ");
 						// Note, in oracle rownum starts with 1.
-					}else {
+					} else {
 						logger.error("Not supported DB!");
 					}
 				} else { // WindowType.TIME_BASED_WIN_TUPLE_BASED_SLIDE
-					toReturn.append("timed in (select timed from ").append(wrapperAlias).append(" where timed <= (select timed from ").append(viewHelperTableName).append(" where U_ID='").append(Main.getWindowStorage().tableNameGeneratorInString(streamSource.getUIDStr())).append(
-					"') and timed >= (select timed from ").append(viewHelperTableName).append(
-					" where U_ID='").append(Main.getWindowStorage().tableNameGeneratorInString(streamSource.getUIDStr())).append("') - ").append(windowSize).append(" ) ");
-					//					if (StorageManager.isH2() || StorageManager.isMysqlDB()) {
+					toReturn.append("timed in (select timed from ").append(wrapperAlias)
+							.append(" where timed <= (select timed from ").append(viewHelperTableName)
+							.append(" where U_ID='")
+							.append(Main.getWindowStorage().tableNameGeneratorInString(streamSource.getUIDStr()))
+							.append(
+									"') and timed >= (select timed from ")
+							.append(viewHelperTableName).append(
+									" where U_ID='")
+							.append(Main.getWindowStorage().tableNameGeneratorInString(streamSource.getUIDStr()))
+							.append("') - ").append(windowSize).append(" ) ");
+					// if (StorageManager.isH2() || StorageManager.isMysqlDB()) {
 					toReturn.append(" order by timed desc ");
-					//					} else if (StorageManager.isOracle()) {
-					//						 TODO
-					//					}
+					// } else if (StorageManager.isOracle()) {
+					// TODO
+					// }
 				}
 
 			}
-			
-			if(Main.getWindowStorage().isH2() && fromIndex > -1){
-            	toReturn.append(")");
-            }
+
+			if (Main.getWindowStorage().isH2() && fromIndex > -1) {
+				toReturn.append(")");
+			}
 
 			toReturn = new StringBuilder(SQLUtils.newRewrite(toReturn, rewritingMapping));
-			logger.debug(new StringBuilder().append("The original Query : ").append(streamSource.getSqlQuery()).toString());
-			logger.debug(new StringBuilder().append("The merged query : ").append(toReturn.toString()).append(" of the StreamSource ").append(streamSource.getAlias()).append(" of the InputStream: ").append(
-						streamSource.getInputStream().getInputStreamName()).append("").toString());
-
+			if(logger.isDebugEnabled()){
+				logger.debug(
+					new StringBuilder().append("The original Query : ").append(streamSource.getSqlQuery()).toString());
+				logger.debug(new StringBuilder().append("The merged query : ").append(toReturn.toString())
+						.append(" of the StreamSource ").append(streamSource.getAlias()).append(" of the InputStream: ")
+						.append(
+								streamSource.getInputStream().getInputStreamName())
+						.append("").toString());
+			}
+			
 			return cachedSqlQuery = toReturn;
 		}
 	}

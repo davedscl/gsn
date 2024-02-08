@@ -26,6 +26,7 @@
 */
 
 package ch.epfl.gsn.wrappers.general;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
@@ -50,11 +51,11 @@ import ch.epfl.gsn.beans.DataField;
 import ch.epfl.gsn.utils.CaseInsensitiveComparator;
 
 /**
- * possible formats for the timestamp fields are available @ http://joda-time.sourceforge.net/api-release/org/joda/time/format/DateTimeFormat.html
+ * possible formats for the timestamp fields are available @
+ * http://joda-time.sourceforge.net/api-release/org/joda/time/format/DateTimeFormat.html
  * Possible timezone : http://joda-time.sourceforge.net/timezones.html
  */
 public class CSVHandler {
-
 
     public static final String LOCAL_TIMEZONE_ID = DateTimeZone.getDefault().getID();
 
@@ -75,11 +76,30 @@ public class CSVHandler {
 
     private String checkPointFile;
 
-    public boolean initialize(String dataFile, String inFields, String inFormats, char separator, char stringSeparator, int skipFirstXLines, String nullValues) {
-        return initialize(dataFile, inFields, inFormats, separator, stringSeparator, skipFirstXLines, nullValues, LOCAL_TIMEZONE_ID, "check-poin/" + (new File(dataFile).getName() + ".chk-point"));
+    public boolean initialize(String dataFile, String inFields, String inFormats, char separator, char stringSeparator,
+            int skipFirstXLines, String nullValues) {
+        return initialize(dataFile, inFields, inFormats, separator, stringSeparator, skipFirstXLines, nullValues,
+                LOCAL_TIMEZONE_ID, "check-poin/" + (new File(dataFile).getName() + ".chk-point"));
     }
 
-    public boolean initialize(String dataFile, String inFields, String inFormats, char separator, char stringSeparator, int skipFirstXLines, String nullValues, String timeZone, String checkpointFile) {
+    /**
+     * Initializes the CSVHandler with the specified parameters.
+     * 
+     * @param dataFile        The path to the CSV data file.
+     * @param inFields        The field names in the CSV file.
+     * @param inFormats       The formats of the fields in the CSV file.
+     * @param separator       The separator character used in the CSV file.
+     * @param stringSeparator The string separator character used in the CSV file.
+     * @param skipFirstXLines The number of lines to skip at the beginning of the
+     *                        CSV file.
+     * @param nullValues      The values to be treated as null in the CSV file.
+     * @param timeZone        The time zone to be used for date and time fields in
+     *                        the CSV file.
+     * @param checkpointFile  The path to the checkpoint file.
+     * @return True if the initialization is successful, false otherwise.
+     */
+    public boolean initialize(String dataFile, String inFields, String inFormats, char separator, char stringSeparator,
+            int skipFirstXLines, String nullValues, String timeZone, String checkpointFile) {
 
         this.stringSeparator = stringSeparator; // default to ,
         this.skipFirstXLines = skipFirstXLines;// default to 0
@@ -99,38 +119,56 @@ public class CSVHandler {
             this.fields = generateFieldIdx(inFields, true);
             this.formats = generateFieldIdx(inFormats, false);
             this.nulls = generateFieldIdx(nullValues, true);
-            ////////////////////////
-            // TODO: Check that the lengths are the same
-            ////////////////////////
+
+            if (fields.length != formats.length) {
+                logger.error("The number of fields and formats are not the same");
+                return false;
+            }
 
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
             return false;
         }
-        if (!validateFormats(this.formats)){
+        if (!validateFormats(this.formats)) {
             return false;
         }
         if (fields.length != formats.length) {
-            logger.error("loading the csv-wrapper failed as the length of fields(" + fields.length + ") doesn't match the length of formats(" + formats.length + ")");
+            logger.error("loading the csv-wrapper failed as the length of fields(" + fields.length
+                    + ") doesn't match the length of formats(" + formats.length + ")");
             return false;
         }
         return true;
 
     }
 
+    /**
+     * Sets up the checkpoint file if it does not already exist.
+     * Creates the necessary directory and the checkpoint file.
+     *
+     * @throws IOException if an I/O error occurs while creating the directory or
+     *                     the file.
+     */
     public void setupCheckPointFileIfNeeded() throws IOException {
         String chkPointDir = new File(new File(getCheckPointFile()).getParent()).getAbsolutePath();
         new File(chkPointDir).mkdirs();
         new File(getCheckPointFile()).createNewFile();
     }
 
+    /**
+     * Validates the formats used in the CSVHandler.
+     * 
+     * @param formats an array of formats to be validated
+     * @return true if all formats are valid, false otherwise
+     */
     public static boolean validateFormats(String[] formats) {
         for (int i = 0; i < formats.length; i++) {
-            if (formats[i].equalsIgnoreCase("numeric") || formats[i].equalsIgnoreCase("string") || formats[i].equalsIgnoreCase("bigint")){
+            if (formats[i].equalsIgnoreCase("numeric") || formats[i].equalsIgnoreCase("string")
+                    || formats[i].equalsIgnoreCase("bigint")) {
                 continue;
             } else if (isTimeStampFormat(formats[i])) {
                 try {
-                    String tmp = DateTimeFormat.forPattern(getTimeStampFormat(formats[i])).print(System.currentTimeMillis());
+                    String tmp = DateTimeFormat.forPattern(getTimeStampFormat(formats[i]))
+                            .print(System.currentTimeMillis());
                 } catch (IllegalArgumentException e) {
                     logger.error("Validating the time-format(" + formats[i] + ") used by the CSV-wrapper failed. ");
                     return false;
@@ -149,34 +187,45 @@ public class CSVHandler {
      * Split the rawFields using comma as the separator.
      *
      * @param rawFields
-     * @param toLowerCase, if false, the case is preserved. if true, the actual outputs will be in lower-case.
+     * @param toLowerCase, if false, the case is preserved. if true, the actual
+     *                     outputs will be in lower-case.
      * @return
      * @throws IOException
      */
     public static String[] generateFieldIdx(String rawFields, boolean toLowerCase) throws IOException {
         String[] toReturn = new CSVReader(new StringReader(rawFields)).readNext();
-        if (toReturn == null){
+        if (toReturn == null) {
             return new String[0];
         }
-            
+
         for (int i = 0; i < toReturn.length; i++) {
             toReturn[i] = toReturn[i].trim();
-            if (toLowerCase){
+            if (toLowerCase) {
                 toReturn[i] = toReturn[i].toLowerCase();
             }
         }
         return toReturn;
     }
 
+    /**
+     * Reads data from a CSV file and returns a list of tree maps containing the
+     * parsed values.
+     * 
+     * @param dataFile      The reader object representing the CSV file.
+     * @param checkpointDir The directory path where the checkpoint file is stored.
+     * @return An ArrayList of TreeMaps, where each TreeMap represents a row of
+     *         parsed values from the CSV file.
+     * @throws IOException If an I/O error occurs while reading the CSV file.
+     */
     public ArrayList<TreeMap<String, Serializable>> work(Reader dataFile, String checkpointDir) throws IOException {
         ArrayList<TreeMap<String, Serializable>> items = null;
         setupCheckPointFileIfNeeded();
         String val = FileUtils.readFileToString(new File(checkPointFile), "UTF-8");
         long lastItem = 0;
-        if (val != null && val.trim().length() > 0){
+        if (val != null && val.trim().length() > 0) {
             lastItem = Long.parseLong(val.trim());
         }
-            
+
         items = parseValues(dataFile, lastItem);
 
         return items;
@@ -188,31 +237,51 @@ public class CSVHandler {
 
     private boolean loggedNoChange = false; // to avoid duplicate logging messages when there is no change
 
-    public ArrayList<TreeMap<String, Serializable>> parseValues(Reader datainput, long previousCheckPoint) throws IOException {
+    /**
+     * Parses the values from the given Reader object and returns an ArrayList of
+     * TreeMap objects.
+     * Each TreeMap represents a row of values from the CSV file, where the keys are
+     * column names and the values are the corresponding values.
+     * 
+     * @param datainput          The Reader object containing the CSV data.
+     * @param previousCheckPoint The checkpoint value to compare against the
+     *                           timestamp column in each row. Rows with a timestamp
+     *                           less than or equal to the checkpoint will be
+     *                           skipped.
+     * @return An ArrayList of TreeMap objects representing the parsed values from
+     *         the CSV file.
+     * @throws IOException If an I/O error occurs while reading the CSV data.
+     */
+    public ArrayList<TreeMap<String, Serializable>> parseValues(Reader datainput, long previousCheckPoint)
+            throws IOException {
         ArrayList<TreeMap<String, Serializable>> toReturn = new ArrayList<TreeMap<String, Serializable>>();
         CSVReader reader = new CSVReader(datainput, getSeparator(), getStringSeparator(), getSkipFirstXLines());
         String[] values = null;
         long currentLine = 0;
         while ((values = reader.readNext()) != null) {
             TreeMap<String, Serializable> se = convertTo(formats, fields, getNulls(), values, getSeparator());
-            if (isEmpty(se)){
+            if (isEmpty(se)) {
                 continue;
-            } 
+            }
             if (se.containsKey(TIMESTAMP)) {
-            	//System.out.println("times "+se.get(TIMESTAMP)+"--"+previousCheckPoint);
-                if (((Long) se.get(TIMESTAMP)) <= previousCheckPoint){
+                // System.out.println("times "+se.get(TIMESTAMP)+"--"+previousCheckPoint);
+                if (((Long) se.get(TIMESTAMP)) <= previousCheckPoint) {
                     continue;
                 }
-                   
+
             } else {// assuming useCounterForCheckPoint = true
 
                 if (logger.isDebugEnabled()) {
                     String symbol = (currentLine < previousCheckPoint) ? " < " : " >= ";
-                    logger.debug("currentLine=" + currentLine + symbol + "checkpoint=" + previousCheckPoint);
+                    if(logger.isDebugEnabled()){
+                        logger.debug("currentLine=" + currentLine + symbol + "checkpoint=" + previousCheckPoint);
+                    }
                 }
 
                 if (currentLine < previousCheckPoint) {// skipping already read lines, based on line count
-                    logger.debug("skipping");
+                    if(logger.isDebugEnabled()){
+                        logger.debug("skipping");
+                    }
                     currentLine++;
                     continue;
                 }
@@ -221,12 +290,13 @@ public class CSVHandler {
             toReturn.add(se);
             currentLine++;
             loggedNoChange = false;
-            if (toReturn.size() > 250){
+            if (toReturn.size() > 250) {
                 break; // Move outside the loop as in each call we only read 250 values;
-            } 
+            }
         }
         if (logger.isDebugEnabled() && toReturn.size() == 0 && loggedNoChange == false) {
-            logger.debug("There is no new item after most recent checkpoint(previousCheckPoint:" + new DateTime(previousCheckPoint) + ").");
+            logger.debug("There is no new item after most recent checkpoint(previousCheckPoint:"
+                    + new DateTime(previousCheckPoint) + ").");
             loggedNoChange = true;
         }
 
@@ -235,20 +305,42 @@ public class CSVHandler {
     }
 
     private boolean isEmpty(Map<String, Serializable> se) {
-        for (Object o : se.values()){
-            if (o != null){
+        for (Object o : se.values()) {
+            if (o != null) {
                 return false;
             }
-        } 
+        }
         return true;
     }
 
-    public TreeMap<String, Serializable> convertTo(String[] formats, String[] fields, String nullValues[], String[] values, char separator) {
-        TreeMap<String, Serializable> streamElement = new TreeMap<String, Serializable>(new CaseInsensitiveComparator());
-        for (String field : fields){
+    /**
+     * Converts the given values into a TreeMap of key-value pairs, where the keys
+     * are specified by the 'fields' array
+     * and the values are determined based on the 'formats' array. The 'nullValues'
+     * array is used to identify null values.
+     * The 'separator' character is used to separate timestamp values.
+     *
+     * @param formats    an array of format strings specifying the type of each
+     *                   value
+     * @param fields     an array of field names corresponding to the keys in the
+     *                   resulting TreeMap
+     * @param nullValues an array of strings representing null values
+     * @param values     an array of values to be converted
+     * @param separator  a character used to separate timestamp values
+     * @return a TreeMap containing the converted values
+     * @throws NumberFormatException    if a value cannot be parsed as a numeric or
+     *                                  bigint type
+     * @throws IllegalArgumentException if there is a parsing error with the
+     *                                  timestamp format or value
+     */
+    public TreeMap<String, Serializable> convertTo(String[] formats, String[] fields, String nullValues[],
+            String[] values, char separator) {
+        TreeMap<String, Serializable> streamElement = new TreeMap<String, Serializable>(
+                new CaseInsensitiveComparator());
+        for (String field : fields) {
             streamElement.put(field, null);
         }
-           
+
         HashMap<String, String> timeStampFormats = new HashMap<String, String>();
         for (int i = 0; i < Math.min(fields.length, values.length); i++) {
             if (isNull(nullValues, values[i])) {
@@ -257,16 +349,16 @@ public class CSVHandler {
                 try {
                     streamElement.put(fields[i], Double.parseDouble(values[i]));
                 } catch (java.lang.NumberFormatException e) {
-                    logger.error("Parsing to Numeric failed: Value to parse=" + values[i]+ " in"+getDataFile());
+                    logger.error("Parsing to Numeric failed: Value to parse=" + values[i] + " in" + getDataFile());
                     throw e;
                 }
             } else if (formats[i].equalsIgnoreCase("string")) {
                 streamElement.put(fields[i], values[i]);
             } else if (formats[i].equalsIgnoreCase("bigint")) {
-            	try {
+                try {
                     streamElement.put(fields[i], Long.parseLong(values[i]));
                 } catch (java.lang.NumberFormatException e) {
-                    logger.error("Parsing to BigInt failed: Value to parse=" + values[i]+ " in"+getDataFile());
+                    logger.error("Parsing to BigInt failed: Value to parse=" + values[i] + " in" + getDataFile());
                     throw e;
                 }
             } else if (isTimeStampFormat(formats[i])) {
@@ -278,10 +370,9 @@ public class CSVHandler {
                     value += separator;
                     format += separator;
                 }
-                if (isTimeStampLeftPaddedFormat(formats[i])){
+                if (isTimeStampLeftPaddedFormat(formats[i])) {
                     values[i] = StringUtils.leftPad(values[i], getTimeStampFormat(formats[i]).length(), '0');
                 }
-                  
 
                 value += values[i];
                 format += getTimeStampFormat(formats[i]);
@@ -297,7 +388,8 @@ public class CSVHandler {
                 DateTime x = DateTimeFormat.forPattern(timeFormat).withZone(getTimeZone()).parseDateTime(timeValue);
                 streamElement.put(timeField, x.getMillis());
             } catch (IllegalArgumentException e) {
-                logger.error("Parsing error: TimeFormat=" + timeFormat + " , TimeValue=" + timeValue+ " in"+getDataFile());
+                logger.error("Parsing error: TimeFormat=" + timeFormat + " , TimeValue=" + timeValue + " in"
+                        + getDataFile());
                 logger.error(e.getMessage(), e);
                 throw e;
             }
@@ -307,22 +399,22 @@ public class CSVHandler {
     }
 
     public static String getTimeStampFormat(String input) {
-        if (input.indexOf("timestampl(") >= 0){
+        if (input.indexOf("timestampl(") >= 0) {
             return input.substring("timestampl(".length(), input.indexOf(")")).trim();
         } else {
             return input.substring("timestamp(".length(), input.indexOf(")")).trim();
         }
-            
+
     }
 
     public static boolean isTimeStampFormat(String input) {
-        return (input.toLowerCase().startsWith("timestamp(") || input.toLowerCase().startsWith("timestampl(")) && input.endsWith(")");
+        return (input.toLowerCase().startsWith("timestamp(") || input.toLowerCase().startsWith("timestampl("))
+                && input.endsWith(")");
     }
 
     public static boolean isTimeStampLeftPaddedFormat(String input) {
         return input.toLowerCase().startsWith("timestampl(") && input.endsWith(")");
     }
-
 
     public char getSeparator() {
         return separator;
@@ -337,16 +429,16 @@ public class CSVHandler {
     }
 
     public static boolean isNull(String[] possibleNullValues, String value) {
-        if (value == null || value.length() == 0){
+        if (value == null || value.length() == 0) {
             return true;
         }
-            
-        for (int i = 0; i < possibleNullValues.length; i++){
-            if (possibleNullValues[i].equalsIgnoreCase(value.trim())){
+
+        for (int i = 0; i < possibleNullValues.length; i++) {
+            if (possibleNullValues[i].equalsIgnoreCase(value.trim())) {
                 return true;
             }
         }
-            
+
         return false;
     }
 
@@ -354,29 +446,37 @@ public class CSVHandler {
         return fields;
     }
 
+    /**
+     * Returns an array of DataField objects representing the fields and their
+     * corresponding data types
+     * in the CSV file.
+     *
+     * @return an array of DataField objects
+     */
     public DataField[] getDataFields() {
         HashMap<String, String> fields = new HashMap<String, String>();
         for (int i = 0; i < getFields().length; i++) {
             String field = getFields()[i];
             String type = getFormats()[i];
             if (isTimeStampFormat(type)) {
-                //GSN doesn't support timestamp data type, all timestamp values are supposed to be bigint.
+                // GSN doesn't support timestamp data type, all timestamp values are supposed to
+                // be bigint.
                 fields.put(field, "bigint");
-            } else if (type.equalsIgnoreCase("numeric")){
+            } else if (type.equalsIgnoreCase("numeric")) {
                 fields.put(field, "numeric");
             } else if (type.equalsIgnoreCase("bigint")) {
                 fields.put(field, "bigint");
             } else {
                 fields.put(field, "string");
             }
-                
+
         }
         DataField[] toReturn = new DataField[fields.size()];
         int i = 0;
-        for (String key : fields.keySet()){
+        for (String key : fields.keySet()) {
             toReturn[i++] = new DataField(key, fields.get(key));
         }
-            
+
         return toReturn;
     }
 

@@ -45,8 +45,9 @@ public abstract class SQLViewQueryRewriter extends QueryRewriter {
 
     private static final transient Logger logger = LoggerFactory.getLogger(SQLViewQueryRewriter.class);
     protected static StorageManager storageManager = Main.getWindowStorage();
-    public static final CharSequence VIEW_HELPER_TABLE = Main.getWindowStorage().tableNameGeneratorInString("_SQL_VIEW_HELPER_".toLowerCase());
-    private static DataField[] viewHelperFields = new DataField[]{new DataField("u_id", "varchar(17)")};
+    public static final CharSequence VIEW_HELPER_TABLE = Main.getWindowStorage()
+            .tableNameGeneratorInString("_SQL_VIEW_HELPER_".toLowerCase());
+    private static DataField[] viewHelperFields = new DataField[] { new DataField("u_id", "varchar(17)") };
 
     static {
         try {
@@ -60,6 +61,11 @@ public abstract class SQLViewQueryRewriter extends QueryRewriter {
     }
     protected StringBuilder cachedSqlQuery;
 
+    /**
+     * Initializes the SQLViewQueryRewriter.
+     * 
+     * @return true if initialization is successful, false otherwise.
+     */
     @Override
     public boolean initialize() {
         if (streamSource == null) {
@@ -68,7 +74,7 @@ public abstract class SQLViewQueryRewriter extends QueryRewriter {
         try {
             // Initializing view helper table entry for this stream source
             storageManager.executeInsert(VIEW_HELPER_TABLE, viewHelperFields, new StreamElement(viewHelperFields,
-                    new Serializable[]{streamSource.getUIDStr().toString()}, -1));
+                    new Serializable[] { streamSource.getUIDStr().toString() }, -1));
 
             storageManager.executeCreateView(streamSource.getUIDStr(), createViewSQL());
         } catch (SQLException e) {
@@ -78,6 +84,14 @@ public abstract class SQLViewQueryRewriter extends QueryRewriter {
         return true;
     }
 
+    /**
+     * Rewrites the given SQL query using the provided stream source.
+     * If the stream source is null, a RuntimeException is thrown.
+     * 
+     * @param query the SQL query to be rewritten
+     * @return a StringBuilder object containing the rewritten query
+     * @throws RuntimeException if the stream source is null
+     */
     @Override
     public StringBuilder rewrite(String query) {
         if (streamSource == null) {
@@ -86,6 +100,11 @@ public abstract class SQLViewQueryRewriter extends QueryRewriter {
         return SQLUtils.newRewrite(query, streamSource.getAlias(), streamSource.getUIDStr());
     }
 
+    /**
+     * Disposes the SQLViewQueryRewriter by dropping the associated view from the
+     * storage manager.
+     * If the streamSource is null, a RuntimeException is thrown.
+     */
     @Override
     public void dispose() {
         if (streamSource == null) {
@@ -98,16 +117,25 @@ public abstract class SQLViewQueryRewriter extends QueryRewriter {
         }
     }
 
+    /**
+     * Checks if data is available at the specified timestamp.
+     * 
+     * @param timestamp The timestamp to check for data availability.
+     * @return true if data is available, false otherwise.
+     */
     @Override
     public boolean dataAvailable(long timestamp) {
         try {
-            //TODO : can we use prepareStatement instead of creating a new query each time
+            // TODO : can we use prepareStatement instead of creating a new query each time
             StringBuilder query = new StringBuilder("update ").append(VIEW_HELPER_TABLE);
             query.append(" set timed=").append(timestamp).append(" where u_id='").append(streamSource.getUIDStr());
             query.append("' ");
             storageManager.executeUpdate(query);
             if (storageManager.isThereAnyResult(new StringBuilder("select * from ").append(streamSource.getUIDStr()))) {
-                logger.debug(streamSource.getWrapper().getWrapperName() + " - Output stream produced/received from a wrapper " + streamSource.toString());
+                if(logger.isDebugEnabled()){
+                    logger.debug(streamSource.getWrapper().getWrapperName()
+                        + " - Output stream produced/received from a wrapper " + streamSource.toString());
+                }
                 return streamSource.windowSlided();
             }
         } catch (SQLException e) {

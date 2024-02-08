@@ -28,12 +28,11 @@ package ch.epfl.gsn.wrappers;
 
 import ch.epfl.gsn.beans.DataField;
 import ch.epfl.gsn.beans.StreamElement;
-import ch.epfl.gsn.wrappers.AbstractWrapper;
 
 public class MockWrapper extends AbstractWrapper {
 	int threadCounter;
-	
-	private DataField[] outputFormat =new DataField[] {new DataField("data","int")};
+
+	private DataField[] outputFormat = new DataField[] { new DataField("data", "int") };
 
 	public boolean initialize() {
 		return true;
@@ -59,6 +58,4 @@ public class MockWrapper extends AbstractWrapper {
 		return "TestWrapperMock";
 	}
 
-
-	
 }

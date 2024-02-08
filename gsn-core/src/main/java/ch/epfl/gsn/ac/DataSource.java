@@ -14,24 +14,33 @@ import java.util.List;
  * To change this template use File | Settings | File Templates.
  */
 
-/* a DataSource object basically presents a tuple of (Virtual Sensor name, access right) */
+/*
+ * a DataSource object basically presents a tuple of (Virtual Sensor name,
+ * access right)
+ */
 public class DataSource {
     private String dataSourceName; // a virtual sensor name
     private String dataSourceType;// access right for the virtual sensor
-    private String fileName = "n";//the name of well formed XML file describing a virtual sensor, it is initially assigned to "n" which means not defined
-    private String fileType = "n";// the type of file (the desired type should be .XML), it is initially assigned to "n" which means not defined
-    private String path = "n";// indicates the directory in which the XML file describing a virtual sensor is stored, it is initially assigned to "n" which means not defined
-    private User owner;// owner of the virtual sensor ( the one who uploads the .XML file to the GSN Server)
+    private String fileName = "n";// the name of well formed XML file describing a virtual sensor, it is initially
+                                  // assigned to "n" which means not defined
+    private String fileType = "n";// the type of file (the desired type should be .XML), it is initially assigned
+                                  // to "n" which means not defined
+    private String path = "n";// indicates the directory in which the XML file describing a virtual sensor is
+                              // stored, it is initially assigned to "n" which means not defined
+    private User owner;// owner of the virtual sensor ( the one who uploads the .XML file to the GSN
+                       // Server)
     private String ownerDecision = "notreceived";// the decision of the owner about access granting to a user
-    private String isCandidate = "no"; // a DataSource becomes candidate if its virtual sensor file is uploaded and it is waiting for the Admin confirmation of the registration of the virtual sensor to GSN server.
+    private String isCandidate = "no"; // a DataSource becomes candidate if its virtual sensor file is uploaded and it
+                                       // is waiting for the Admin confirmation of the registration of the virtual
+                                       // sensor to GSN server.
     private static transient Logger logger = LoggerFactory.getLogger(DataSource.class);
 
-
-    /****************************************** Constructors*******************************************/
+    /******************************************
+     * Constructors
+     *******************************************/
     /**
      * *********************************************************************************************
      */
-
 
     public DataSource(String dataSourceName, String dataSourceType, String fileName, String fileType, String path) {
         this.dataSourceName = dataSourceName;
@@ -46,14 +55,14 @@ public class DataSource {
 
     }
 
-    public DataSource(String dataSourceName, String dataSourceType, String fileName, String fileType, String path, String ownerDecision) {
+    public DataSource(String dataSourceName, String dataSourceType, String fileName, String fileType, String path,
+            String ownerDecision) {
         this.dataSourceName = dataSourceName;
         this.dataSourceType = dataSourceType;
         this.fileName = fileName;
         this.fileType = fileType;
         this.path = path;
         this.ownerDecision = ownerDecision;
-
 
     }
 
@@ -68,7 +77,9 @@ public class DataSource {
         this.ownerDecision = ownerDecision;
     }
 
-    /****************************************** Set Methods *******************************************/
+    /******************************************
+     * Set Methods
+     *******************************************/
     /**
      * *********************************************************************************************
      */
@@ -105,8 +116,9 @@ public class DataSource {
         this.isCandidate = isCandidate;
     }
 
-
-    /****************************************** Get Methods *******************************************/
+    /******************************************
+     * Get Methods
+     *******************************************/
     /**
      * *********************************************************************************************
      */
@@ -144,53 +156,62 @@ public class DataSource {
     }
 
     String getAccessRightsString() {
-    	char c = this.dataSourceType.charAt(this.dataSourceType.length()-1);
-    	if (c == '1'){
+        char c = this.dataSourceType.charAt(this.dataSourceType.length() - 1);
+        if (c == '1') {
             return "read";
-        } else if (c == '2'){
+        } else if (c == '2') {
             return "write";
-        } else if (c == '3'){
+        } else if (c == '3') {
             return "read/write";
         } else if (c == '4') {
             return "own";
         } else {
             return "unknown";
         }
-    		
+
     }
 
-    /****************************************** AC Methods********************************************/
+    /******************************************
+     * AC Methods
+     ********************************************/
     /**
      * *********************************************************************************************
      */
-    //returns true if the DataSourceType(acccess right) is 1(read)or 3(read/write)or 4(own)
+    // returns true if the DataSourceType(acccess right) is 1(read)or
+    // 3(read/write)or 4(own)
     public boolean hasReadAccessRight(String srname) {
         boolean hasACRight = false;
-        if ((this.dataSourceName.equals(srname) && this.dataSourceType.charAt(0) == '1') || (this.dataSourceName.equals(srname) && this.dataSourceType.charAt(0) == '3') || (this.dataSourceName.equals(srname) && this.dataSourceType.charAt(0) == '4')) {
+        if ((this.dataSourceName.equals(srname) && this.dataSourceType.charAt(0) == '1')
+                || (this.dataSourceName.equals(srname) && this.dataSourceType.charAt(0) == '3')
+                || (this.dataSourceName.equals(srname) && this.dataSourceType.charAt(0) == '4')) {
             hasACRight = true;
         }
         return hasACRight;
     }
 
-    //returns true if the DataSourceType(acccess right) is 2(write)or 3(read/write)or 4(own)
+    // returns true if the DataSourceType(acccess right) is 2(write)or
+    // 3(read/write)or 4(own)
     public boolean hasWriteAccessRight(String srname) {
         boolean hasACRight = false;
-        if ((this.dataSourceName.equals(srname) && this.dataSourceType.charAt(0) == '2') || (this.dataSourceName.equals(srname) && this.dataSourceType.charAt(0) == '3') || (this.dataSourceName.equals(srname) && this.dataSourceType.charAt(0) == '4')) {
+        if ((this.dataSourceName.equals(srname) && this.dataSourceType.charAt(0) == '2')
+                || (this.dataSourceName.equals(srname) && this.dataSourceType.charAt(0) == '3')
+                || (this.dataSourceName.equals(srname) && this.dataSourceType.charAt(0) == '4')) {
             hasACRight = true;
         }
         return hasACRight;
     }
 
-    //returns true if the DataSourceType(acccess right) is 3(read/write)or 4(own)
+    // returns true if the DataSourceType(acccess right) is 3(read/write)or 4(own)
     public boolean hasReadWriteAccessRight(String srname) {
         boolean hasACRight = false;
-        if ((this.dataSourceName.equals(srname) && this.dataSourceType.charAt(0) == '3') || (this.dataSourceName.equals(srname) && this.dataSourceType.charAt(0) == '4')) {
+        if ((this.dataSourceName.equals(srname) && this.dataSourceType.charAt(0) == '3')
+                || (this.dataSourceName.equals(srname) && this.dataSourceType.charAt(0) == '4')) {
             hasACRight = true;
         }
         return hasACRight;
     }
 
-    //returns true if the DataSourceType(acccess right) is 4(own)
+    // returns true if the DataSourceType(acccess right) is 4(own)
     public boolean hasOwnAccessRight(String srname) {
         boolean hasACRight = false;
         if (this.dataSourceName.equals(srname) && this.dataSourceType.charAt(0) == '4') {
@@ -204,8 +225,9 @@ public class DataSource {
     }
 
     /*
-    * Returns true if all virtual sensors in the list ARE NOT managed by the access control layer
-    * */
+     * Returns true if all virtual sensors in the list ARE NOT managed by the access
+     * control layer
+     */
     public static boolean allVirtualSensorsInListAreNotManaged(List<String> listOfVirtualSensors) {
         Iterator<String> iterator = listOfVirtualSensors.iterator();
         boolean result = true;
@@ -217,4 +239,3 @@ public class DataSource {
         return !result;
     }
 }
-

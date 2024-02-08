@@ -1,2 +1,0 @@
-INFO  [2024-01-17 07:56:48,976] [play-dev-mode-akka.actor.default-dispatcher-2] (Version.java:30) - HV000001: Hibernate Validator 5.4.1.Final
-WARN  [2024-01-17 07:56:48,993] [play-dev-mode-akka.actor.default-dispatcher-2] (ParameterMessageInterpolator.java:28) - HV000184: ParameterMessageInterpolator has been chosen, EL interpolation will not be supported

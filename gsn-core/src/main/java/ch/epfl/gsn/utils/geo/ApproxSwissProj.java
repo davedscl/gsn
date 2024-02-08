@@ -46,7 +46,15 @@ package ch.epfl.gsn.utils.geo;
 
 public class ApproxSwissProj {
 
-	// Convert CH y/x/h to WGS height
+	/**
+	 * Converts a height value from the Swiss military coordinate system to the
+	 * WGS84 coordinate system.
+	 *
+	 * @param y The y-coordinate value in the Swiss military coordinate system.
+	 * @param x The x-coordinate value in the Swiss military coordinate system.
+	 * @param h The height value in the Swiss military coordinate system.
+	 * @return The converted height value in the WGS84 coordinate system.
+	 */
 	private static double CHtoWGSheight(double y, double x, double h) {
 		// Converts militar to civil and to unit = 1000km
 		// Axiliary values (% Bern)
@@ -59,7 +67,14 @@ public class ApproxSwissProj {
 		return h;
 	}
 
-	// Convert CH y/x to WGS lat
+	/**
+	 * Converts latitude coordinates from the Swiss military coordinate system to
+	 * the WGS84 coordinate system.
+	 *
+	 * @param y The y-coordinate value in the Swiss military coordinate system.
+	 * @param x The x-coordinate value in the Swiss military coordinate system.
+	 * @return The converted latitude value in the WGS84 coordinate system.
+	 */
 	private static double CHtoWGSlat(double y, double x) {
 		// Converts militar to civil and to unit = 1000km
 		// Axiliary values (% Bern)
@@ -79,7 +94,14 @@ public class ApproxSwissProj {
 		return lat;
 	}
 
-	// Convert CH y/x to WGS long
+	/**
+	 * Converts longitude coordinates from the Swiss military coordinate system to
+	 * the WGS84 coordinate system.
+	 *
+	 * @param y The y-coordinate value in the Swiss military coordinate system.
+	 * @param x The x-coordinate value in the Swiss military coordinate system.
+	 * @return The converted longitude value in the WGS84 coordinate system.
+	 */
 	private static double CHtoWGSlng(double y, double x) {
 		// Converts militar to civil and to unit = 1000km
 		// Axiliary values (% Bern)
@@ -89,7 +111,8 @@ public class ApproxSwissProj {
 		// Process long
 		double lng = (2.6779094 + (4.728982 * y_aux)
 				+ (0.791484 * y_aux * x_aux) + (0.1306 * y_aux * Math.pow(
-				x_aux, 2))) - (0.0436 * Math.pow(y_aux, 3));
+						x_aux, 2)))
+				- (0.0436 * Math.pow(y_aux, 3));
 
 		// Unit 10000" to 1 " and converts seconds to degrees (dec)
 		lng = (lng * 100) / 36;
@@ -97,8 +120,14 @@ public class ApproxSwissProj {
 		return lng;
 	}
 
-	// Convert decimal angle (degrees) to sexagesimal angle (degrees, minutes
-	// and seconds dd.mmss,ss)
+	/**
+	 * Convert decimal angle (degrees) to sexagesimal angle (degrees, minutes and
+	 * seconds dd.mmss,ss)
+	 *
+	 * @param dec The decimal angle value to be converted.
+	 * @return The sexagesimal angle representation of the input decimal angle
+	 *         value.
+	 */
 	public static double DecToSexAngle(double dec) {
 		int deg = (int) Math.floor(dec);
 		int min = (int) Math.floor((dec - deg) * 60);
@@ -127,8 +156,13 @@ public class ApproxSwissProj {
 		return d;
 	}
 
-	// Convert sexagesimal angle (degrees, minutes and seconds dd.mmss,ss) to
-	// seconds
+	/**
+	 * Convert sexagesimal angle (degrees, minutes and seconds dd.mmss,ss) to
+	 * seconds.
+	 *
+	 * @param dms The sexagesimal angle value to be converted.
+	 * @return The equivalent angle value in seconds.
+	 */
 	public static double SexAngleToSeconds(double dms) {
 		double deg = 0, min = 0, sec = 0;
 		deg = Math.floor(dms);
@@ -139,8 +173,13 @@ public class ApproxSwissProj {
 		return sec + (min * 60) + (deg * 3600);
 	}
 
-	// Convert sexagesimal angle (degrees, minutes and seconds "dd.mmss") to
-	// decimal angle (degrees)
+	/**
+	 * Convert sexagesimal angle (degrees, minutes and seconds "dd.mmss") to decimal
+	 * angle (degrees)
+	 *
+	 * @param dms The sexagesimal angle value to be converted.
+	 * @return The equivalent decimal angle value.
+	 */
 	public static double SexToDecAngle(double dms) {
 		// Extract DMS
 		// Input: dd.mmss(,)ss
@@ -173,7 +212,14 @@ public class ApproxSwissProj {
 		return d;
 	}
 
-	// Convert WGS lat/long (deg dec) and height to CH h
+	/**
+	 * Convert WGS lat/long (deg dec) and height to CH h
+	 *
+	 * @param lat The latitude value in WGS84 coordinate system.
+	 * @param lng The longitude value in WGS84 coordinate system.
+	 * @param h   The ellipsoidal height value in WGS84 coordinate system.
+	 * @return The converted height value in LV03 coordinate system.
+	 */
 	private static double WGStoCHh(double lat, double lng, double h) {
 		// Converts degrees dec to sex
 		lat = DecToSexAngle(lat);
@@ -193,7 +239,13 @@ public class ApproxSwissProj {
 		return h;
 	}
 
-	// Convert WGS lat/long (deg dec) to CH x
+	/**
+	 * Convert WGS lat/long (deg dec) to CH x
+	 *
+	 * @param lat The latitude value in WGS84 coordinate system.
+	 * @param lng The longitude value in WGS84 coordinate system.
+	 * @return The converted x-coordinate value in LV03 coordinate system.
+	 */
 	private static double WGStoCHx(double lat, double lng) {
 		// Converts degrees dec to sex
 		lat = DecToSexAngle(lat);
@@ -210,13 +262,20 @@ public class ApproxSwissProj {
 		// Process X
 		double x = ((200147.07 + (308807.95 * lat_aux)
 				+ (3745.25 * Math.pow(lng_aux, 2)) + (76.63 * Math.pow(lat_aux,
-				2))) - (194.56 * Math.pow(lng_aux, 2) * lat_aux))
+						2)))
+				- (194.56 * Math.pow(lng_aux, 2) * lat_aux))
 				+ (119.79 * Math.pow(lat_aux, 3));
 
 		return x;
 	}
 
-	// Convert WGS lat/long (deg dec) to CH y
+	/**
+	 * Convert WGS lat/long (deg dec) to CH y
+	 *
+	 * @param lat The latitude value in WGS84 coordinate system.
+	 * @param lng The longitude value in WGS84 coordinate system.
+	 * @return The converted y-coordinate value in LV03 coordinate system.
+	 */
 	private static double WGStoCHy(double lat, double lng) {
 		// Converts degrees dec to sex
 		lat = DecToSexAngle(lat);

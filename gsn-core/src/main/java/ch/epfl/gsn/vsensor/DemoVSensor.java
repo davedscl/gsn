@@ -43,102 +43,137 @@ import org.slf4j.LoggerFactory;
 import ch.epfl.gsn.beans.DataField;
 import ch.epfl.gsn.beans.DataTypes;
 import ch.epfl.gsn.beans.StreamElement;
-import ch.epfl.gsn.vsensor.AbstractVirtualSensor;
-import ch.epfl.gsn.vsensor.DemoVSensor;
 
 import org.slf4j.Logger;
 
-
+/**
+ * DemoVSensor extends AbstractVirtualSensor to provide a demo virtual sensor
+ * implementation.
+ */
 public class DemoVSensor extends AbstractVirtualSensor {
 
-	private static final transient Logger logger                  = LoggerFactory.getLogger( DemoVSensor.class );
+	private static final transient Logger logger = LoggerFactory.getLogger(DemoVSensor.class);
 
-	private ArrayList < String >          fields                  = new ArrayList < String >( );
+	private ArrayList<String> fields = new ArrayList<String>();
 
-	private ByteArrayOutputStream         outputStream            = new ByteArrayOutputStream( 24 * 1024 );
+	private ByteArrayOutputStream outputStream = new ByteArrayOutputStream(24 * 1024);
 
-	private ByteArrayInputStream          input;
+	private ByteArrayInputStream input;
 
-	private static final String           IMAGE_OUTPUT_FIELD      = "image";
+	private static final String IMAGE_OUTPUT_FIELD = "image";
 
-	private static final int              IMAGE_OUTPUT_FIELD_TYPE = DataTypes.BINARY;
+	private static final int IMAGE_OUTPUT_FIELD_TYPE = DataTypes.BINARY;
 
-	private static final String [ ]       OUTPUT_FIELDS           = new String [ ] { IMAGE_OUTPUT_FIELD };
+	private static final String[] OUTPUT_FIELDS = new String[] { IMAGE_OUTPUT_FIELD };
 
-	private static final Byte [ ]      OUTPUT_TYPES            = new Byte [ ] { IMAGE_OUTPUT_FIELD_TYPE };
+	private static final Byte[] OUTPUT_TYPES = new Byte[] { IMAGE_OUTPUT_FIELD_TYPE };
 
-	private static BufferedImage          cachedBufferedImage     = null;
+	private static BufferedImage cachedBufferedImage = null;
 
-	private static int                    counter                 = 0;
+	private static int counter = 0;
 
-	public void dataAvailable ( String inputStreamName , StreamElement data ) {
-		if ( inputStreamName.equalsIgnoreCase( "SSTREAM" ) ) {
-			String action = ( String ) data.getData( "STATUS" );
+	/**
+	 * Handles new data received from the input streams.
+	 * 
+	 * This method is called when new data is available on the
+	 * input streams specified by the virtual sensor configuration.
+	 *
+	 * It checks the input stream name and processes the data accordingly:
+	 *
+	 * - For stream "SSTREAM", it checks the action and ID in the data.
+	 * If action contains "add", it increments the counter.
+	 * If action contains "remove", it decrements the counter.
+	 *
+	 * - For stream "CSTREAM", it processes the image data.
+	 * writes the processed image to the output stream.
+	 *
+	 * @param inputStreamName Name of the input stream where data is available.
+	 * @param data            The StreamElement containing the new data.
+	 */
+	public void dataAvailable(String inputStreamName, StreamElement data) {
+		if (inputStreamName.equalsIgnoreCase("SSTREAM")) {
+			String action = (String) data.getData("STATUS");
 			/**
 			 * 
 			 */
-			String moteId = ( String ) data.getData( "ID" );
-			if ( moteId.toLowerCase( ).indexOf( "mica" ) < 0 ) {return;}
-			if ( action.toLowerCase( ).indexOf( "add" ) >= 0 ) {counter++;}
-			if ( action.toLowerCase( ).indexOf( "remove" ) >= 0 ) {counter--;}
+			String moteId = (String) data.getData("ID");
+			if (moteId.toLowerCase().indexOf("mica") < 0) {
+				return;
+			}
+			if (action.toLowerCase().indexOf("add") >= 0) {
+				counter++;
+			}
+			if (action.toLowerCase().indexOf("remove") >= 0) {
+				counter--;
+			}
 		}
-		if ( inputStreamName.equalsIgnoreCase( "CSTREAM" ) ) {
+		if (inputStreamName.equalsIgnoreCase("CSTREAM")) {
 
 			BufferedImage bufferedImage = null;
-			outputStream.reset( );
-			byte [ ] rawData = ( byte [ ] ) data.getData( "IMAGE" );
-			input = new ByteArrayInputStream( rawData );
+			outputStream.reset();
+			byte[] rawData = (byte[]) data.getData("IMAGE");
+			input = new ByteArrayInputStream(rawData);
 			try {
-				bufferedImage = ImageIO.read( input );
-			} catch ( IOException e ) {
+				bufferedImage = ImageIO.read(input);
+			} catch (IOException e) {
 				logger.error(e.getMessage(), e);
 			}
-			Graphics2D graphics = ( Graphics2D ) bufferedImage.getGraphics( );
+			Graphics2D graphics = (Graphics2D) bufferedImage.getGraphics();
 			int size = 30;
 			int locX = 0;
 			int locY = 0;
-			if ( counter < 0 ) {counter = 0;}
-			switch ( counter ) {
-			case 0 :
-				graphics.setColor( Color.RED );
-				break;
-			case 1 :
-				graphics.setColor( Color.ORANGE );
-				break;
-
-			case 2 :
-				graphics.setColor( Color.YELLOW );
-				break;
-
-			case 3 :
-				graphics.setColor( Color.GREEN );
-				break;
-			default :
-				logger.warn( new StringBuilder( ).append( "Shouldn't happen.>" ).append( counter ).append( "<" ).toString( ) );
+			if (counter < 0) {
+				counter = 0;
 			}
-			graphics.fillOval( locX , locY , size , size );
+			switch (counter) {
+				case 0:
+					graphics.setColor(Color.RED);
+					break;
+				case 1:
+					graphics.setColor(Color.ORANGE);
+					break;
+
+				case 2:
+					graphics.setColor(Color.YELLOW);
+					break;
+
+				case 3:
+					graphics.setColor(Color.GREEN);
+					break;
+				default:
+					logger.warn(
+							new StringBuilder().append("Shouldn't happen.>").append(counter).append("<").toString());
+			}
+			graphics.fillOval(locX, locY, size, size);
 			try {
-				ImageIO.write(bufferedImage,"jpeg", outputStream);
+				ImageIO.write(bufferedImage, "jpeg", outputStream);
 				outputStream.close();
 
-			}catch (Exception e) {
-				logger.error(e.getMessage(),e);
+			} catch (Exception e) {
+				logger.error(e.getMessage(), e);
 			}
 
-			StreamElement outputSE = new StreamElement( OUTPUT_FIELDS , OUTPUT_TYPES , new Serializable [ ] { outputStream.toByteArray( ) } , data.getTimeStamp( ) );
-			dataProduced( outputSE );
+			StreamElement outputSE = new StreamElement(OUTPUT_FIELDS, OUTPUT_TYPES,
+					new Serializable[] { outputStream.toByteArray() }, data.getTimeStamp());
+			dataProduced(outputSE);
 		}
-		logger.info( new StringBuilder( ).append( "Data received under the name: " ).append( inputStreamName ).toString( ) );
+		logger.info(new StringBuilder().append("Data received under the name: ").append(inputStreamName).toString());
 	}
 
-	public boolean initialize ( ) {
-		for ( DataField field : getVirtualSensorConfiguration( ).getOutputStructure( ) ){
-			fields.add( field.getName( ) );
+	/**
+	 * This method initializes the virtual sensor.
+	 * It retrieves the output fields from the virtual sensor configuration.
+	 * 
+	 * @return true if initialization is successful, false otherwise.
+	 */
+	public boolean initialize() {
+		for (DataField field : getVirtualSensorConfiguration().getOutputStructure()) {
+			fields.add(field.getName());
 		}
 		return true;
 	}
 
-	public void dispose ( ) {
+	public void dispose() {
 
 	}
 }

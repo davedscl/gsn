@@ -31,7 +31,7 @@ public class PushDelivery implements DeliverySystem {
 
 	private boolean isClosed = false;
 
-	private static transient Logger       logger     = LoggerFactory.getLogger ( PushDelivery.class );
+	private static transient Logger logger = LoggerFactory.getLogger(PushDelivery.class);
 
 	private HttpPut httpPut;
 
@@ -41,95 +41,101 @@ public class PushDelivery implements DeliverySystem {
 
 	private double notificationId;
 
-	public PushDelivery(String deliveryContactPoint,double notificaitonId, Writer writer) {
+	public PushDelivery(String deliveryContactPoint, double notificaitonId, Writer writer) {
 		httpPut = new HttpPut(deliveryContactPoint);
-		
+
 		this.writer = writer;
 		this.notificationId = notificaitonId;
 	}
 
-
 	public void writeStructure(DataField[] fields) throws IOException {
 		String xml = xstream.toXML(fields);
-		if (writer ==null){
+		if (writer == null) {
 			throw new RuntimeException("The writer structue is null.");
 		}
-			
+
 		writer.write(xml);
-		writer=  null;
+		writer = null;
 	}
 
 	public boolean writeStreamElement(StreamElement se) {
 		String xml = xstream.toXML(new StreamElement4Rest(se));
 		boolean success = sendData(xml);
-//		boolean success =true;
+		// boolean success =true;
 		isClosed = !success;
 		return success;
 	}
 
-    public boolean writeKeepAliveStreamElement() {
-        return true;
-    }
+	public boolean writeKeepAliveStreamElement() {
+		return true;
+	}
 
-    public void close() {
+	public void close() {
 		httpclient.getConnectionManager().shutdown();
 		isClosed = true;
 	}
 
 	public boolean isClosed() {
-		return isClosed  ;
+		return isClosed;
 	}
 
 	private boolean sendData(String xml) {
 		try {
-			ArrayList<NameValuePair> postParameters = new ArrayList <NameValuePair>();
-			postParameters.add(new BasicNameValuePair(PushDelivery.NOTIFICATION_ID_KEY, Double.toString(notificationId)));
+			ArrayList<NameValuePair> postParameters = new ArrayList<NameValuePair>();
+			postParameters
+					.add(new BasicNameValuePair(PushDelivery.NOTIFICATION_ID_KEY, Double.toString(notificationId)));
 			postParameters.add(new BasicNameValuePair(PushDelivery.DATA, xml));
-			
+
 			httpPut.setEntity(new UrlEncodedFormEntity(postParameters, HTTP.UTF_8));
-			
+
 			HttpResponse response = httpclient.execute(httpPut);
-			
+
 			int statusCode = response.getStatusLine().getStatusCode();
 			response.getEntity().getContent().close(); // releasing the connection to the http client's pool
-			if (statusCode != RestStreamHandler.SUCCESS_200) { //fix typo
+			if (statusCode != RestStreamHandler.SUCCESS_200) { // fix typo
 				return false;
 			}
 			return true;
 		} catch (Exception e) {
-			logger.warn(e.getMessage(),e);
+			logger.warn(e.getMessage(), e);
 			return false;
 		}
 
 	}
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o){ return true;}
-        if (o == null || getClass() != o.getClass()){ return false;}
-        PushDelivery that = (PushDelivery) o;
-        if (Double.compare(that.notificationId, notificationId) != 0){ return false;}
-        if (httpPut != null ? !httpPut.getURI().equals(that.httpPut.getURI()) : that.httpPut != null){ return false;}
-        return true;
-    }
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		PushDelivery that = (PushDelivery) o;
+		if (Double.compare(that.notificationId, notificationId) != 0) {
+			return false;
+		}
+		if (httpPut == null ? that.httpPut != null : !httpPut.getURI().equals(that.httpPut.getURI())) {
+			return false;
+		}
+		return true;
+	}
 
-    @Override
-    public int hashCode() {
-        int result;
-        long temp;
-        result = httpPut != null ? httpPut.getURI().hashCode() : 0;
-        temp = notificationId != +0.0d ? Double.doubleToLongBits(notificationId) : 0L;
-        result = 31 * result + (int) (temp ^ (temp >>> 32));
-        return result;
-    }
-
+	@Override
+	public int hashCode() {
+		int result;
+		long temp;
+		result = httpPut == null ? 0 : httpPut.getURI().hashCode();
+		temp = notificationId == +0.0d ? 0L : Double.doubleToLongBits(notificationId);
+		result = 31 * result + (int) (temp ^ (temp >>> 32));
+		return result;
+	}
 
 	@Override
 	public void setTimeout(long timeoutMs) {
 		// TODO Auto-generated method stub
-		
-	}
 
+	}
 
 	@Override
 	public String getUser() {

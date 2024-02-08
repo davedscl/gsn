@@ -43,27 +43,39 @@ import java.util.TimerTask;
 import java.util.TreeMap;
 
 /**
- * This Processor (processing class) executes a scriptlet upon reception of a new  StreamElement and can be used to
- * implement arbitrary complex processing class by specifying its logic directly in the virtual sensor description file.
- * This is especially useful for setting up flexible, complex and DBMS independent calibration functions.
- * The current implementation supports the Groovy scripting language @see http://groovy.codehaus.org .
+ * This Processor (processing class) executes a scriptlet upon reception of a
+ * new StreamElement and can be used to
+ * implement arbitrary complex processing class by specifying its logic directly
+ * in the virtual sensor description file.
+ * This is especially useful for setting up flexible, complex and DBMS
+ * independent calibration functions.
+ * The current implementation supports the Groovy scripting language @see
+ * http://groovy.codehaus.org .
  * <p/>
  * Data Binding
  * ------------
- * The current implementation automatically binds the data between the StreamElement and the variables of the scriptlet.
- * The binding is based on the mapping between the StreamElement data field names, and the scriptlet variable names.
+ * The current implementation automatically binds the data between the
+ * StreamElement and the variables of the scriptlet.
+ * The binding is based on the mapping between the StreamElement data field
+ * names, and the scriptlet variable names.
  * <p/>
- * Before executing the scriptlet, all the fields from the StreamElement received are binded to the scriptlet.
- * The scriptlet is then executed and could use both variables hard-coded or dynamically binded from the StreamElement.
- * Once the scriptlet execution is done, a new StreamElement matching the output sctructure defined in the virtual
- * sensor description file is created. The data of this StreamElement are binded from all the variables binded to the
- * scriptlet. If a field name exists in the output sctructure and no variable match it in the scriptlet, then its value
+ * Before executing the scriptlet, all the fields from the StreamElement
+ * received are binded to the scriptlet.
+ * The scriptlet is then executed and could use both variables hard-coded or
+ * dynamically binded from the StreamElement.
+ * Once the scriptlet execution is done, a new StreamElement matching the output
+ * sctructure defined in the virtual
+ * sensor description file is created. The data of this StreamElement are binded
+ * from all the variables binded to the
+ * scriptlet. If a field name exists in the output sctructure and no variable
+ * match it in the scriptlet, then its value
  * is set to null.
  * <p/>
  * State
  * -----
  * <p/>
- * In order to save the state of a variable for the next evaluation, the following code is automatically added to your
+ * In order to save the state of a variable for the next evaluation, the
+ * following code is automatically added to your
  * script:
  * <p/>
  * def isdef(var) {
@@ -80,46 +92,60 @@ import java.util.TreeMap;
  * <p/>
  * The following variable is accessible directly in the scriptlet:
  * <p/>
- * 1. groovy.lang.Binding binding                This contains the variables binded to your scriptlet.
+ * 1. groovy.lang.Binding binding This contains the variables binded to your
+ * scriptlet.
  * <p/>
  * PROCESSING CLASS INIT-PARAMETERS
  * --------------------------------
  * <ul>
- *      <li>
- *      scriptlet, String, mandatory if scriptlet-periodic is not specified, optional otherwise<br/>
- *      Contains the content of your script executed upon reception of a new StreamElement.
- *      </li>
- *      <li>
- *      persistant, boolean, optional<br/>
- *      Sets wether or not a StreamElement is created and stored at the end of the scriplet execution.
- *      </li>
- *      <li>
- *      scriplet-periodic, String, mandatory if scriptlet is not specified, optional otherwise<br/>
- *      Contains the content of your script which is executed periodically at 'period' ms interval.
- *      </li>
- *      <li>
- *      period, long, mandatoryif scriptlet-periodic is specified<br/>
- *      Define the period (in ms) between two execution of the scriptlet-periodic script.
- *      </li>
+ * <li>
+ * scriptlet, String, mandatory if scriptlet-periodic is not specified, optional
+ * otherwise<br/>
+ * Contains the content of your script executed upon reception of a new
+ * StreamElement.
+ * </li>
+ * <li>
+ * persistant, boolean, optional<br/>
+ * Sets wether or not a StreamElement is created and stored at the end of the
+ * scriplet execution.
+ * </li>
+ * <li>
+ * scriplet-periodic, String, mandatory if scriptlet is not specified, optional
+ * otherwise<br/>
+ * Contains the content of your script which is executed periodically at
+ * 'period' ms interval.
+ * </li>
+ * <li>
+ * period, long, mandatoryif scriptlet-periodic is specified<br/>
+ * Define the period (in ms) between two execution of the scriptlet-periodic
+ * script.
+ * </li>
  * </ul>
  * PERIODICAL EXECUTION
  * --------------------
  * <p>
- * If some part of your script has to be executed at a periodical interval (and not upon reception of a new StreamElement),
- * you must set this part of code in the 'scriptlet-periodic' parameter and set the interval in the 'period' parameter.
- * Note that the 'script' and 'scriplet-periodic' scripts are never executed concurrently and that the  state is shared
+ * If some part of your script has to be executed at a periodical interval (and
+ * not upon reception of a new StreamElement),
+ * you must set this part of code in the 'scriptlet-periodic' parameter and set
+ * the interval in the 'period' parameter.
+ * Note that the 'script' and 'scriplet-periodic' scripts are never executed
+ * concurrently and that the state is shared
  * among the two.
- * Note that the StreamElement generated by the execution of the 'scriptlet-periodic' is NOT stored in the db, even if
+ * Note that the StreamElement generated by the execution of the
+ * 'scriptlet-periodic' is NOT stored in the db, even if
  * the 'persistant' parameter is enabled.
  * </p>
  * PREDEFINED SERVICES
  * -------------------
  * <p/>
- * The following classes providing services are, by default, statically imported to your scriptlet and thus, all their
+ * The following classes providing services are, by default, statically imported
+ * to your scriptlet and thus, all their
  * static methods can be used directly in your scriptlet.
  * <p/>
- * 1. The {@link ch.epfl.gsn.utils.services.EmailService} class provides access the Email notification services.
- * 2. The {@link ch.epfl.gsn.utils.services.TwitterService} class provides access to Twitter notifications services.
+ * 1. The {@link ch.epfl.gsn.utils.services.EmailService} class provides access
+ * the Email notification services.
+ * 2. The {@link ch.epfl.gsn.utils.services.TwitterService} class provides
+ * access to Twitter notifications services.
  * <p/>
  * LIMITATIONS
  * -----------
@@ -141,7 +167,8 @@ public class ScriptletProcessor extends AbstractVirtualSensor {
     private Timer timer = null;
 
     /**
-     * This field holds the scriplet (state and logic) executed upon reception of a new {@link ch.epfl.gsn.beans.StreamElement}.
+     * This field holds the scriplet (state and logic) executed upon reception of a
+     * new {@link ch.epfl.gsn.beans.StreamElement}.
      */
     protected Script scriptlet = null;
 
@@ -153,7 +180,8 @@ public class ScriptletProcessor extends AbstractVirtualSensor {
     /**
      * This field holds the context (variable state) which is shared among
      * the {@link ch.epfl.gsn.processor.ScriptletProcessor#scriptlet}
-     * and {@link ch.epfl.gsn.processor.ScriptletProcessor#scriptletPeriodic} fields.
+     * and {@link ch.epfl.gsn.processor.ScriptletProcessor#scriptletPeriodic}
+     * fields.
      */
     protected final Binding context = new Binding();
 
@@ -165,19 +193,23 @@ public class ScriptletProcessor extends AbstractVirtualSensor {
 
     private TimerTask periodicalTask = null;
 
+    /**
+     * Initializes the ScriptletProcessor.
+     * 
+     * @return true if the initialization is successful, false otherwise.
+     */
     @Override
     public boolean initialize() {
         return initialize(
                 getVirtualSensorConfiguration().getOutputStructure(),
-                getVirtualSensorConfiguration().getMainClassInitialParams()
-        );
+                getVirtualSensorConfiguration().getMainClassInitialParams());
     }
 
     @Override
     public void dispose() {
-        if (periodicalTask != null){
+        if (periodicalTask != null) {
             periodicalTask.cancel();
-        }     
+        }
     }
 
     @Override
@@ -185,6 +217,15 @@ public class ScriptletProcessor extends AbstractVirtualSensor {
         evaluate(scriptlet, se, persistant);
     }
 
+    /**
+     * Initializes the ScriptletProcessor with the given output structure and
+     * parameters.
+     * 
+     * @param outputStructure The array of DataField representing the output
+     *                        structure.
+     * @param parameters      The TreeMap containing the parameters.
+     * @return true if the initialization is successful, false otherwise.
+     */
     protected boolean initialize(DataField[] outputStructure, TreeMap<String, String> parameters) {
         if (outputStructure == null) {
             logger.warn("Failed to initialize the processing class because the outputStructure is null.");
@@ -192,7 +233,6 @@ public class ScriptletProcessor extends AbstractVirtualSensor {
         } else {
             this.outputStructure = outputStructure;
         }
-            
 
         // Mandatory Parameters
 
@@ -200,43 +240,44 @@ public class ScriptletProcessor extends AbstractVirtualSensor {
         if (p != null) {
             try {
                 period = Long.parseLong(p);
-            }
-            catch (Exception e) {
-                // ...   
+            } catch (Exception e) {
+                // ...
             }
         }
 
         String ps1 = parameters.get(PARAM_SCRIPTLET);
         if (ps1 != null) {
             scriptlet = initScriptlet(ps1);
-            if (scriptlet == null){
+            if (scriptlet == null) {
                 return false;
             }
-               
+
         }
 
         String ps2 = parameters.get(PARAM_SCRIPTLETPERIODIC);
         if (ps2 != null) {
             scriptletPeriodic = initScriptlet(ps2);
-            if (scriptletPeriodic == null){
+            if (scriptletPeriodic == null) {
                 return false;
             }
-                
+
         }
 
-        // At least one of the following is mandatory: {scriptlet,  scriptlet-periodic}.
+        // At least one of the following is mandatory: {scriptlet, scriptlet-periodic}.
         if (scriptlet == null && scriptletPeriodic == null) {
-            if (logger.isDebugEnabled()){
-                logger.warn("The Initial Parameter >" + PARAM_SCRIPTLET + "< or >" + PARAM_SCRIPTLETPERIODIC + "< MUST be provided in the configuration file for the processing class.");
+            if (logger.isDebugEnabled()) {
+                logger.warn("The Initial Parameter >" + PARAM_SCRIPTLET + "< or >" + PARAM_SCRIPTLETPERIODIC
+                        + "< MUST be provided in the configuration file for the processing class.");
             }
-                
+
             return false;
         }
         if ((scriptletPeriodic != null && period < 0) || (scriptletPeriodic == null && period >= 0)) {
-            if (logger.isDebugEnabled()){
-                logger.warn("The Initial Parameters >" + PARAM_SCRIPTLETPERIODIC + "< and >" + PARAM_PERIOD + "< MUST be provided together in the configuration file for the processing class.");
+            if (logger.isDebugEnabled()) {
+                logger.warn("The Initial Parameters >" + PARAM_SCRIPTLETPERIODIC + "< and >" + PARAM_PERIOD
+                        + "< MUST be provided together in the configuration file for the processing class.");
             }
-                
+
             return false;
         }
 
@@ -245,9 +286,10 @@ public class ScriptletProcessor extends AbstractVirtualSensor {
         if (parameters.containsKey(PARAM_PERSITANT)) {
             try {
                 persistant = Boolean.parseBoolean(parameters.get(PARAM_PERSITANT));
-            }
-            catch (Exception e) {
-                logger.debug(e.getMessage(), e);
+            } catch (Exception e) {
+                if(logger.isDebugEnabled()){
+                    logger.debug(e.getMessage(), e);
+                }
             }
         }
 
@@ -263,12 +305,20 @@ public class ScriptletProcessor extends AbstractVirtualSensor {
         return true;
     }
 
+    /**
+     * Initializes a scriptlet with the given script.
+     * 
+     * @param ps the script to be initialized
+     * @return the initialized scriptlet
+     */
     protected Script initScriptlet(String ps) {
         StringBuilder scriptlet = new StringBuilder();
         scriptlet.append("// start auto generated part --\n");
         // Add the static import (for predefined services)
-        scriptlet.append("import static ").append(ch.epfl.gsn.utils.services.EmailService.class.getCanonicalName()).append(".*;\n");
-        //scriptlet.append("import static ").append(ch.epfl.gsn.utils.services.TwitterService.class.getCanonicalName()).append(".*;\n");
+        scriptlet.append("import static ").append(ch.epfl.gsn.utils.services.EmailService.class.getCanonicalName())
+                .append(".*;\n");
+        // scriptlet.append("import static
+        // ").append(ch.epfl.gsn.utils.services.TwitterService.class.getCanonicalName()).append(".*;\n");
         // Add the syntactic sugars
         scriptlet.append("def isdef(var){(binding.getVariables().containsKey(var))}\n");
         scriptlet.append("// end auto generated part --\n");
@@ -279,15 +329,26 @@ public class ScriptletProcessor extends AbstractVirtualSensor {
         Script script = null;
         try {
             script = shell.parse(scriptlet.toString());
-            logger.debug("Compiled script: \n" + scriptlet.toString());
-        }
-        catch (Exception e) {
+            if(logger.isDebugEnabled()){
+                logger.debug("Compiled script: \n" + scriptlet.toString());
+            }
+        } catch (Exception e) {
             logger.error("Failed to compile the scriptlet " + e.getMessage());
             return null;
         }
         return script;
     }
 
+    /**
+     * Formats the output stream element based on the provided binding.
+     * 
+     * @param binding The binding object containing the variables to be included in
+     *                the output stream element.
+     * @return A StreamElement object containing the data extracted from the
+     *         binding, formatted according to the output structure.
+     * @throws MissingPropertyException If a required property is missing from the
+     *                                  binding.
+     */
     protected StreamElement formatOutputStreamElement(Binding binding) {
         Serializable[] data = new Serializable[outputStructure.length];
         for (int i = 0; i < outputStructure.length; i++) {
@@ -295,10 +356,9 @@ public class ScriptletProcessor extends AbstractVirtualSensor {
             Object o = null;
             try {
                 o = binding.getVariable(df.getName().toUpperCase());
-            }
-            catch (MissingPropertyException e) {
-            	logger.warn(e.getMessage(),e);
-                //..   
+            } catch (MissingPropertyException e) {
+                logger.warn(e.getMessage(), e);
+                // ..
             }
             data[i] = (Serializable) o;
         }
@@ -306,13 +366,18 @@ public class ScriptletProcessor extends AbstractVirtualSensor {
         try {
             Long timed = (Long) binding.getVariable("TIMED");
             seo.setTimeStamp(timed);
-        }
-        catch (MissingPropertyException e) {
+        } catch (MissingPropertyException e) {
             // ...
         }
         return seo;
     }
 
+    /**
+     * Updates the context with the data from the given StreamElement.
+     * 
+     * @param se the StreamElement containing the data to update the context with
+     * @return the updated context
+     */
     protected Binding updateContext(StreamElement se) {
         if (se != null) {
             for (String fieldName : se.getFieldNames()) {
@@ -323,6 +388,15 @@ public class ScriptletProcessor extends AbstractVirtualSensor {
         return context;
     }
 
+    /**
+     * Evaluates a script with the given stream element and updates the context.
+     * If persist is true, formats the output stream element and calls the
+     * dataProduced method.
+     *
+     * @param script  The script to be evaluated.
+     * @param se      The stream element to be used for evaluation.
+     * @param persist Indicates whether to persist the output stream element.
+     */
     protected void evaluate(Script script, StreamElement se, boolean persist) {
         StreamElement seo = null;
         synchronized (context) {
@@ -339,9 +413,9 @@ public class ScriptletProcessor extends AbstractVirtualSensor {
     }
 
     private synchronized Timer getTimer() {
-        if (timer == null){
+        if (timer == null) {
             timer = new Timer(false);
-        } 
+        }
         return timer;
     }
 }

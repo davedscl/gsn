@@ -31,10 +31,10 @@ import ch.epfl.gsn.beans.StreamElement;
 
 public interface DataEnumeratorIF extends Enumeration<StreamElement> {
 
-    public boolean hasMoreElements() ;
+    public boolean hasMoreElements();
 
-    public StreamElement nextElement() throws RuntimeException ;
+    public StreamElement nextElement() throws RuntimeException;
 
-    public void close() ;
+    public void close();
 
 }

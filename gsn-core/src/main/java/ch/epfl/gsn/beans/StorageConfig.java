@@ -106,6 +106,4 @@ public class StorageConfig {
         return isJdbcDefined() || isIdentifierDefined();
     }
 
-    
-
 }

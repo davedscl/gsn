@@ -26,25 +26,49 @@
 package ch.epfl.gsn.utils;
 
 public class ParamParser {
-   
-   public static int getInteger ( String input , int defaultValue ) {
-      if ( input == null ) {return defaultValue;}
+
+   /**
+    * Parses the given input string into an integer value.
+    * If the input is null or cannot be parsed, the default value is returned.
+    *
+    * @param input        the input string to be parsed
+    * @param defaultValue the default value to be returned if parsing fails
+    * @return the parsed integer value or the default value if parsing fails
+    */
+   public static int getInteger(String input, int defaultValue) {
+      if (input == null) {
+         return defaultValue;
+      }
       try {
-         return Integer.parseInt( input );
-      } catch ( Exception e ) {
+         return Integer.parseInt(input);
+      } catch (Exception e) {
          return defaultValue;
       }
    }
-   
-   public static int getInteger ( Object input , int defaultValue ) {
-      if ( input == null ) {return defaultValue;}
+
+   /**
+    * Parses the input object into an integer value.
+    * If the input is null or cannot be parsed into an integer, the default value
+    * is returned.
+    *
+    * @param input        the input object to be parsed
+    * @param defaultValue the default value to be returned if parsing fails
+    * @return the parsed integer value or the default value if parsing fails
+    */
+   public static int getInteger(Object input, int defaultValue) {
+      if (input == null) {
+         return defaultValue;
+      }
       try {
-         if ( input instanceof String ) {return getInteger( ( String ) input , defaultValue );}
-         if ( input instanceof Number ) {return ( ( Number ) input ).intValue( );}
-         else{
-            return Integer.parseInt( input.toString( ) );
-         }   
-      } catch ( Exception e ) {
+         if (input instanceof String) {
+            return getInteger((String) input, defaultValue);
+         }
+         if (input instanceof Number) {
+            return ((Number) input).intValue();
+         } else {
+            return Integer.parseInt(input.toString());
+         }
+      } catch (Exception e) {
          return defaultValue;
       }
    }

@@ -33,8 +33,6 @@ import org.slf4j.LoggerFactory;
 
 import ch.epfl.gsn.beans.AddressBean;
 import ch.epfl.gsn.beans.DataField;
-import ch.epfl.gsn.wrappers.AbstractWrapper;
-import ch.epfl.gsn.wrappers.MultiFormatWrapper;
 
 import org.slf4j.Logger;
 
@@ -50,43 +48,55 @@ import org.slf4j.Logger;
  */
 public class MultiFormatWrapper extends AbstractWrapper {
   private DataField[] collection = new DataField[] { new DataField("packet_type", "int", "packet type"),
-      new DataField("temperature", "double", "Presents the temperature sensor."), new DataField("light", "double", "Presents the light sensor.") };
+      new DataField("temperature", "double", "Presents the temperature sensor."),
+      new DataField("light", "double", "Presents the light sensor.") };
   private final transient Logger logger = LoggerFactory.getLogger(MultiFormatWrapper.class);
   private int counter;
   private AddressBean params;
   private long rate = 1000;
 
-  public boolean initialize() {    
+  /**
+   * Initializes the MultiFormatWrapper.
+   * Retrieves the active address bean and sets the sampling rate if provided.
+   * 
+   * @return true if initialization is successful, false otherwise.
+   */
+  public boolean initialize() {
     params = getActiveAddressBean();
-    
-    if ( params.getPredicateValue( "rate" ) != null ) {
-      rate = (long) Integer.parseInt( params.getPredicateValue( "rate"));
-      
-      logger.info("Sampling rate set to " + params.getPredicateValue( "rate") + " msec.");
+
+    if (params.getPredicateValue("rate") != null) {
+      rate = (long) Integer.parseInt(params.getPredicateValue("rate"));
+
+      logger.info("Sampling rate set to " + params.getPredicateValue("rate") + " msec.");
     }
-    
+
     return true;
   }
 
+  /**
+   * Runs the wrapper by continuously generating random readings for light and
+   * temperature,
+   * and posting the data to GSN.
+   */
   public void run() {
     Double light = 0.0, temperature = 0.0;
     int packetType = 0;
-    
+
     while (isActive()) {
       try {
-        // delay 
+        // delay
         Thread.sleep(rate);
       } catch (InterruptedException e) {
         logger.error(e.getMessage(), e);
       }
-      
+
       // create some random readings
       light = ((int) (Math.random() * 10000)) / 10.0;
       temperature = ((int) (Math.random() * 1000)) / 10.0;
       packetType = 2;
 
       // post the data to GSN
-      postStreamElement(new Serializable[] { packetType, temperature, light });       
+      postStreamElement(new Serializable[] { packetType, temperature, light });
     }
   }
 
@@ -96,7 +106,7 @@ public class MultiFormatWrapper extends AbstractWrapper {
 
   public String getWrapperName() {
     return "MultiFormat Sample Wrapper";
-  }  
+  }
 
   public void dispose() {
     counter--;

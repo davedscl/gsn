@@ -193,4 +193,3 @@
 * Integrated the GSN installer in the trunk through the 'installer' ant task.
 * Added the 'download\_mode=inline' parameter to the /multidata servlet, in order to get the data not as an attachment.
 * Removed the unused virtual-sensor pool, marked the 'lifeCyclePool' configuration element as deprecated.
-

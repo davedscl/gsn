@@ -31,13 +31,17 @@ import java.io.IOException;
 import ch.epfl.gsn.beans.DataField;
 import ch.epfl.gsn.beans.StreamElement;
 
+/**
+ * The DeliverySystem interface represents a delivery system in a Global Sensor
+ * Networks (GSN) application.
+ */
 public interface DeliverySystem {
 
 	public abstract void writeStructure(DataField[] fields) throws IOException;
 
 	public abstract boolean writeStreamElement(StreamElement se);
 
-    public abstract boolean writeKeepAliveStreamElement();
+	public abstract boolean writeKeepAliveStreamElement();
 
 	public abstract void close();
 

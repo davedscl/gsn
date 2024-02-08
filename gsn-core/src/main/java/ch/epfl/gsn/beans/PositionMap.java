@@ -6,9 +6,10 @@ public class PositionMap {
 	public Long begin;
 	public Long end;
 	public String comment;
-	
-	public PositionMap() {}
-			
+
+	public PositionMap() {
+	}
+
 	public PositionMap(Integer id, Short type, Long begin, Long end, String comment) {
 		this.device_id = id;
 		this.device_type = type;

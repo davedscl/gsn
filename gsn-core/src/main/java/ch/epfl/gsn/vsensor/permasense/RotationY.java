@@ -6,44 +6,62 @@ import java.text.DecimalFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * This class implements the {@code Converter} interface and provides a method
+ * to convert a rotation value around the Y-axis.
+ */
 public class RotationY implements Converter {
-	
+
 	private static final DecimalFormat decimal3 = new DecimalFormat("0.000");
 
 	private static final transient Logger logger = LoggerFactory.getLogger(RotationY.class);
 
+	/**
+	 * Converts the rotation value around the Y-axis based on the given signal name,
+	 * value, and input.
+	 *
+	 * @param signal_name The name of the signal.
+	 * @param value       The rotation value in degrees.
+	 * @param input       The input value.
+	 * @return The converted value as a string, or null if the conversion fails or
+	 *         the signal_name is null.
+	 */
 	@Override
 	public String convert(Serializable signal_name, String value, Serializable input) {
-		if (signal_name == null || input == null){
+		if (signal_name == null || input == null) {
 			return null;
 		}
-			
+
 		Double y, x;
-		
+
 		if (signal_name instanceof Integer ||
 				signal_name instanceof Double ||
 				signal_name instanceof Float ||
-				signal_name instanceof Short){
-					y = (Double) signal_name;
-		} else if (signal_name instanceof String){
-			y = Double.parseDouble((String)signal_name);
+				signal_name instanceof Short) {
+			y = (Double) signal_name;
+		} else if (signal_name instanceof String) {
+			y = Double.parseDouble((String) signal_name);
 		} else {
 			logger.error("signal_name is not of supported type");
 			return null;
 		}
-		
-		if (input instanceof Integer){
+
+		if (input instanceof Integer) {
 			x = (Double) input;
 		} else if (input instanceof String) {
-			x = Double.parseDouble((String)input);
+			x = Double.parseDouble((String) input);
 		} else {
 			logger.error("input is not of supported type");
 			return null;
 		}
-		
+
 		double a;
-		try { a = Double.parseDouble(value); } catch (NumberFormatException e) { return null; }
-		
+		try {
+			a = Double.parseDouble(value);
+		} catch (NumberFormatException e) {
+			return null;
+		}
+
 		return decimal3.format(x * Math.sin(Math.toRadians(a)) + y * Math.cos(Math.toRadians(a)));
 	}
 

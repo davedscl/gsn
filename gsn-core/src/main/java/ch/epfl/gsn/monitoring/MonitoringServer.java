@@ -45,92 +45,105 @@ import java.util.Date;
 import java.util.Hashtable;
 import java.util.Map;
 
-
-
 public class MonitoringServer extends Thread {
-	
-	private final transient Logger logger = LoggerFactory.getLogger( MonitoringServer.class );
-	
+
+	private final transient Logger logger = LoggerFactory.getLogger(MonitoringServer.class);
+
 	private ServerSocket socket = null;
 	private boolean running = true;
-	private SimpleDateFormat sdf = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss z"); 
-
+	private SimpleDateFormat sdf = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss z");
 
 	/**
-     * Return statistics about the GSN server, faking an HTTP server for retro-compatibility
-     * 
-     * the protocol is similar to the carbon protocol used by Graphite, except the timestamp
-     * http://matt.aimonetti.net/posts/2013/06/26/practical-guide-to-graphite-monitoring/
-     */
+	 * Return statistics about the GSN server, faking an HTTP server for
+	 * retro-compatibility
+	 * 
+	 * the protocol is similar to the carbon protocol used by Graphite, except the
+	 * timestamp
+	 * http://matt.aimonetti.net/posts/2013/06/26/practical-guide-to-graphite-monitoring/
+	 */
 	public MonitoringServer(int port) {
 		super("Monitoring Server");
 
 		try {
 			ServerSocketFactory serverSocketFactory = ServerSocketFactory.getDefault();
-            socket = serverSocketFactory.createServerSocket(port);
-            socket.setSoTimeout(1000);
-		}catch(Exception e){
-			logger.error("unable to open socket for monitoring",e);
+			socket = serverSocketFactory.createServerSocket(port);
+			socket.setSoTimeout(1000);
+		} catch (Exception e) {
+			logger.error("unable to open socket for monitoring", e);
 		}
 	}
-	
+
+	/**
+	 * Executes the main logic of the MonitoringServer in a separate thread.
+	 * Continuously accepts incoming connections and handles monitoring requests.
+	 * For each incoming connection, a new thread is created to handle the request.
+	 */
 	@Override
-	public void run(){
-	
-		while (running){
-		   try {
-		       final Socket server = socket.accept();
-		       server.setSoTimeout(60000);
-		       logger.debug("monitoring accepted from "+server.getInetAddress());
-               Thread t = new Thread(new Runnable(){
+	public void run() {
+
+		while (running) {
+			try {
+				final Socket server = socket.accept();
+				server.setSoTimeout(60000);
+				if(logger.isDebugEnabled()){
+					logger.debug("monitoring accepted from " + server.getInetAddress());
+				}
+				Thread t = new Thread(new Runnable() {
 
 					@Override
 					public void run() {
 						try {
-						InputStream input = new BufferedInputStream(server.getInputStream());
-						OutputStream output = new BufferedOutputStream(server.getOutputStream());
-						byte[] b = new byte[3];
-						input.read(b);
-						if (new String(b).equalsIgnoreCase("get")){
-							StringBuilder values = new StringBuilder();
-					        for (Monitorable m : Main.getInstance().getToMonitor()){
-					        	Hashtable<String,Object> h = m.getStatistics();
-					        	for (Map.Entry<String,Object> e : h.entrySet()){
-					        		values.append(e.getKey()).append(" ");
-					        		values.append(e.getValue()).append("\n");
-					        	}
-					        }
-					        byte[] content = values.toString().getBytes("utf-8");
+							InputStream input = new BufferedInputStream(server.getInputStream());
+							OutputStream output = new BufferedOutputStream(server.getOutputStream());
+							byte[] b = new byte[3];
+							input.read(b);
+							if (new String(b).equalsIgnoreCase("get")) {
+								StringBuilder values = new StringBuilder();
+								for (Monitorable m : Main.getInstance().getToMonitor()) {
+									Hashtable<String, Object> h = m.getStatistics();
+									for (Map.Entry<String, Object> e : h.entrySet()) {
+										values.append(e.getKey()).append(" ");
+										values.append(e.getValue()).append("\n");
+									}
+								}
+								byte[] content = values.toString().getBytes("utf-8");
 
-					        String head = "HTTP/1.1 200 OK\r\nDate: " + 
-					                sdf.format(new Date()) +
-					        		"\r\nServer: Global Sensor Network(GSN)\r\nContent-Length: " + 
-					        		content.length +
-					        		"\r\nCache-Control: public, max-age=0, no-cache\r\nConnection: close\r\n"+
-					        		"Content-Type: text/plain; charset=UTF-8\r\n\r\n";
-					        output.write(head.getBytes("utf-8"));
-					        output.write(content);
-					        output.flush();
-						}
-						server.close();
-						}catch (Exception e){
-							logger.warn("Error while communicating with "+server.getInetAddress(), e);
+								String head = "HTTP/1.1 200 OK\r\nDate: " +
+										sdf.format(new Date()) +
+										"\r\nServer: Global Sensor Network(GSN)\r\nContent-Length: " +
+										content.length +
+										"\r\nCache-Control: public, max-age=0, no-cache\r\nConnection: close\r\n" +
+										"Content-Type: text/plain; charset=UTF-8\r\n\r\n";
+								output.write(head.getBytes("utf-8"));
+								output.write(content);
+								output.flush();
+							}
+							server.close();
+						} catch (Exception e) {
+							logger.warn("Error while communicating with " + server.getInetAddress(), e);
 						}
 					}
-					
-			   });
-	           t.setName("Monitoring thread");
-	           t.start();
-	   
-	          } catch(SocketTimeoutException ste){
-	        	  // just keep trying until someone connects
-	          } catch(IOException ioe){
-	        	  logger.error("IO Error on monitoring connection.", ioe);
-	          }
-	    
+
+				});
+				t.setName("Monitoring thread");
+				t.start();
+
+			} catch (SocketTimeoutException ste) {
+				// just keep trying until someone connects
+			} catch (IOException ioe) {
+				logger.error("IO Error on monitoring connection.", ioe);
+			}
+
 		}
 	}
-	
+
+	/**
+	 * Stops the monitoring server.
+	 * This method sets the 'running' flag to false, closes the socket, and waits
+	 * for a short period of time before returning.
+	 * 
+	 * @throws Exception if an error occurs while stopping the server.
+	 */
 	public void stopServer() {
 		try {
 			running = false;
@@ -138,7 +151,8 @@ public class MonitoringServer extends Thread {
 			socket.close();
 			Thread.sleep(100);
 
-		}catch(Exception e){}
+		} catch (Exception e) {
+		}
 	}
 
 }

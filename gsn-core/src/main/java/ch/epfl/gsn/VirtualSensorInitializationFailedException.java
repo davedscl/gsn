@@ -27,22 +27,22 @@ package ch.epfl.gsn;
 
 public class VirtualSensorInitializationFailedException extends Exception {
 
-	private static final long serialVersionUID = -6903638792983036844L;
+   private static final long serialVersionUID = -6903638792983036844L;
 
-	public VirtualSensorInitializationFailedException ( ) {
-      super( );
+   public VirtualSensorInitializationFailedException() {
+      super();
    }
-   
-   public VirtualSensorInitializationFailedException ( String message ) {
-      super( message );
+
+   public VirtualSensorInitializationFailedException(String message) {
+      super(message);
    }
-   
-   public VirtualSensorInitializationFailedException ( String message , Throwable cause ) {
-      super( message , cause );
+
+   public VirtualSensorInitializationFailedException(String message, Throwable cause) {
+      super(message, cause);
    }
-   
-   public VirtualSensorInitializationFailedException ( Throwable cause ) {
-      super( cause );
+
+   public VirtualSensorInitializationFailedException(Throwable cause) {
+      super(cause);
    }
-   
+
 }

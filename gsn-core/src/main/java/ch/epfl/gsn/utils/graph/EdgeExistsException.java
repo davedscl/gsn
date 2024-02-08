@@ -27,6 +27,9 @@
 
 package ch.epfl.gsn.utils.graph;
 
+/**
+ * This exception is thrown when an edge already exists in a graph.
+ */
 public class EdgeExistsException extends Exception {
 
 	private static final long serialVersionUID = 6890337360223725923L;
@@ -46,5 +49,5 @@ public class EdgeExistsException extends Exception {
 	public EdgeExistsException(Throwable cause) {
 		super(cause);
 	}
-	
+
 }

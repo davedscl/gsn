@@ -35,16 +35,30 @@ import java.util.Comparator;
  * and value pairs hence you don't need to call trim when putting or getting a
  * value to/from the hashmap.
  */
-public class CaseInsensitiveComparator implements Comparator<Object>,Serializable {
-   
-private static final long serialVersionUID = 2540687777213332025L;
+public class CaseInsensitiveComparator implements Comparator<Object>, Serializable {
 
-public int compare ( Object o1 , Object o2 ) {
-      if ( o1 == null && o2 == null ) {return 0;}
-      if ( o1 == null ) {return -1;}
-      if ( o2 == null ) {return 1;}
-      String input1 = o1.toString( ).trim( );
-      String input2 = o2.toString( ).trim( );
-      return input1.compareToIgnoreCase( input2 );
+   private static final long serialVersionUID = 2540687777213332025L;
+
+   /**
+    * Compares two objects in a case-insensitive manner.
+    * 
+    * @param o1 the first object to be compared
+    * @param o2 the second object to be compared
+    * @return 0 if both objects are null, a negative value if o1 is null, a positive value if o2 is null,
+    *         or the result of comparing the string representations of o1 and o2 in a case-insensitive manner
+    */
+   public int compare(Object o1, Object o2) {
+      if (o1 == null && o2 == null) {
+         return 0;
+      }
+      if (o1 == null) {
+         return -1;
+      }
+      if (o2 == null) {
+         return 1;
+      }
+      String input1 = o1.toString().trim();
+      String input2 = o2.toString().trim();
+      return input1.compareToIgnoreCase(input2);
    }
 }
