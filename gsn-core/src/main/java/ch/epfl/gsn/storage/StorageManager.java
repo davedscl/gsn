@@ -61,6 +61,13 @@ public abstract class StorageManager {
 
     private int Idcounter = 0;
 
+    private String driver = null;
+    protected boolean isH2;
+    protected boolean isMysql;
+    protected boolean isOracle;
+    protected boolean isSqlServer;
+    protected boolean isPostgres;
+
     /**
      * Initializes the StorageManager with the specified database driver, username,
      * password, database URL, and maximum number of database connections.
@@ -363,7 +370,9 @@ public abstract class StorageManager {
             PreparedStatement prepareStatement = connection.prepareStatement(
                     sqlQuery.toString());
             ResultSet resultSet = prepareStatement.executeQuery();
-            toreturn = resultSet.next();
+            if(resultSet.next()){
+                toreturn = true;
+            }
         } catch (SQLException error) {
             logger.error(error.getMessage(), error);
         } finally {
@@ -1054,6 +1063,7 @@ public abstract class StorageManager {
                         logger.error("The type conversion is not supported for : "
                                 + dataField.getName() + "("
                                 + dataField.getDataTypeID() + ") : ");
+                        break;
                 }
                 counter++;
             }
@@ -1211,7 +1221,7 @@ public abstract class StorageManager {
         return new StringBuilder("create view ").append(viewName).append(" AS ( ").append(selectQuery).append(" ) ");
     }
 
-    private String driver = null;
+
 
     /**
      * The prefix is in lower case
@@ -1263,9 +1273,10 @@ public abstract class StorageManager {
             long time1 = System.currentTimeMillis();
             ResultSet resultSet;
             resultSet = prepareStatement.executeQuery();
-            resultSet.next();
-            long time2 = System.currentTimeMillis();
-            return resultSet.getLong(1) - time2 + (time2 - time1) / 2;
+            if(resultSet.next()){
+                long time2 = System.currentTimeMillis();
+                return resultSet.getLong(1) - time2 + (time2 - time1) / 2;
+            }
         } catch (SQLException error) {
             logger.error(error.getMessage(), error);
         } finally {
@@ -1349,12 +1360,6 @@ public abstract class StorageManager {
 
     }
 
-    // deprecated
-    protected boolean isH2;
-    protected boolean isMysql;
-    protected boolean isOracle;
-    protected boolean isSqlServer;
-    protected boolean isPostgres;
 
     public boolean isOracle() {
         return isOracle;

@@ -32,8 +32,6 @@ import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.lang.StringUtils;
-
 import ch.epfl.gsn.utils.CaseInsensitiveComparator;
 
 public class SQLUtils {
@@ -164,12 +162,10 @@ public class SQLUtils {
 				continue;
 			}
 			String tableName = matcher.group(3);
-			if (tableName.equals(tableNameToRename)) {
+			if (tableName.equals(tableNameToRename) && replaceTo != null) {
 				// $4 means that the 4th group of the match should be appended to the
 				// string (the forth group contains the field name).
-				if (replaceTo != null) {
-					matcher.appendReplacement(result, new StringBuilder(replaceTo).append("$4").toString());
-				}
+				matcher.appendReplacement(result, new StringBuilder(replaceTo).append("$4").toString());
 			}
 		}
 		String toReturn = matcher.appendTail(result).toString().toLowerCase();
@@ -221,8 +217,7 @@ public class SQLUtils {
 		if (indexOfWhere < 0) {
 			return " true ";
 		}
-		String toReturn = pQuery.substring(indexOfWhere + " where".length(), pQuery.length());
-		return toReturn;
+		return pQuery.substring(indexOfWhere + " where".length(), pQuery.length());
 	}
 
 	public static void main(String[] args) {

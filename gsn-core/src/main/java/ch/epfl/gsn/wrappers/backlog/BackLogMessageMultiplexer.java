@@ -188,8 +188,7 @@ public class BackLogMessageMultiplexer extends Thread implements CoreStationList
 
 				pkt.write(baos.toByteArray());
 
-				if (connecting) {
-					if (pkt.size() >= 5) {
+				if (connecting && pkt.size() >= 5) {
 						byte[] tmp = pkt.toByteArray();
 						pkt = new ByteArrayOutputStream();
 
@@ -210,7 +209,6 @@ public class BackLogMessageMultiplexer extends Thread implements CoreStationList
 							asyncCoreStationClient.reconnect(this);
 							recvQueue.clear();
 						}
-					}
 				}
 
 				boolean hasMorePkt = true;
@@ -444,7 +442,7 @@ public class BackLogMessageMultiplexer extends Thread implements CoreStationList
 			logger.debug("Listener for message type " + msgTypeInt + " deregistered");
 		}
 
-		if (vec.size() == 0) {
+		if (vec.isEmpty()) {
 			msgTypeListener.remove(msgTypeInt);
 		}
 
@@ -479,7 +477,7 @@ public class BackLogMessageMultiplexer extends Thread implements CoreStationList
 			BackLogMessageListener temp = en.nextElement();
 			// send the message to the listener
 			try {
-				if (temp.messageRecv(coreStationDeviceId, message) == true) {
+				if (temp.messageRecv(coreStationDeviceId, message)) {
 					ReceiverCount++;
 				}
 			} catch (Exception e) {

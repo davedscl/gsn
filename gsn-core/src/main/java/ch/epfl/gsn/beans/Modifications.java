@@ -42,7 +42,6 @@ import ch.epfl.gsn.Main;
 import ch.epfl.gsn.Mappings;
 import ch.epfl.gsn.delivery.LocalDeliveryWrapper;
 import ch.epfl.gsn.storage.SQLUtils;
-import ch.epfl.gsn.utils.ValidityTools;
 import ch.epfl.gsn.utils.graph.Graph;
 import ch.epfl.gsn.utils.graph.Node;
 import ch.epfl.gsn.utils.graph.NodeNotExistsExeption;
@@ -165,13 +164,13 @@ public final class Modifications {
 			VSensorConfig vSensorConfig = Mappings.getConfigurationObject(fileName);
 			if (vSensorConfig != null) {
 				Node<VSensorConfig> node = graph.findNode(vSensorConfig);
-				if (node != null && removeVirtualSensorConf.contains(vSensorConfig) == false) {
+				if (node != null && !removeVirtualSensorConf.contains(vSensorConfig)) {
 					// adding to removed list the removed vs and all virtual sensors that depend on
 					// it
 					List<Node<VSensorConfig>> nodesAffectedByRemoval = graph.nodesAffectedByRemoval(node);
 					for (Node<VSensorConfig> toRemoveNode : nodesAffectedByRemoval) {
 						VSensorConfig config = toRemoveNode.getObject();
-						if (removeVirtualSensorConf.contains(config) == false) {
+						if (!removeVirtualSensorConf.contains(config)) {
 							removeVirtualSensorConf.add(config);
 						}
 
@@ -248,19 +247,16 @@ public final class Modifications {
 						}
 						String vsensorName = addressing[addressingIndex].getPredicateValue("query");
 						
-						if(vsensorName==null){
-							vsensorName = addressing[addressingIndex].getPredicateValueWithDefault("name",
-							Double.toString(Math.random() * 10000000.0));
-						} else if (isLocalZeroMQ) {
-							vsensorName = addressing[addressingIndex].getPredicateValue("vsensor");
-							if (vsensorName == null) {
-								vsensorName = Double.toString(Math.random() * 1000000000.0);
-							}
-						} else {
+						if (vsensorName!=null) {
 							vsensorName = SQLUtils.getTableName(vsensorName);
-							if (vsensorName == null) {
-								vsensorName = Double.toString(Math.random() * 1000000000.0);
-							}
+							if(vsensorName ==null)
+								vsensorName=Double.toString(Math.random()*1000000000.0);
+						}else if(isLocalZeroMQ){
+							vsensorName = addressing[addressingIndex].getPredicateValue("vsensor");
+							if(vsensorName ==null)
+								vsensorName=Double.toString(Math.random()*1000000000.0);
+						}else {
+							vsensorName = addressing[addressingIndex].getPredicateValueWithDefault("name",Double.toString(Math.random()*10000000.0));
 						}
 						vsensorName = vsensorName.toLowerCase();
 

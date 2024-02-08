@@ -39,7 +39,6 @@ import java.util.Vector;
 
 import org.slf4j.LoggerFactory;
 
-import ch.epfl.gsn.Main;
 import ch.epfl.gsn.beans.DataTypes;
 import ch.epfl.gsn.beans.StreamElement;
 
@@ -80,6 +79,7 @@ public class DataEnumerator implements DataEnumeratorIF {
 
 	private boolean manualCloseConnection;
 	private boolean hadError = false;
+	private StreamElement streamElement = null;
 
 	/**
 	 * Creats an empty data enumerator.
@@ -190,13 +190,13 @@ public class DataEnumerator implements DataEnumeratorIF {
 			logger.error(e.getMessage(), e);
 			hasNext = false;
 		} finally {
-			if (hasNext == false) {
+			if (!hasNext) {
 				close();
 			}
 		}
 	}
 
-	private StreamElement streamElement = null;
+	
 
 	public boolean hasMoreElements() {
 		return hasNext;
@@ -207,7 +207,7 @@ public class DataEnumerator implements DataEnumeratorIF {
 	 * resultset doesn't have anymore elements or closed.")<
 	 */
 	public StreamElement nextElement() throws RuntimeException {
-		if (hasNext == false) {
+		if (!hasNext) {
 			throw new IndexOutOfBoundsException("The resultset doesn't have anymore elements or closed.");
 		}
 		long timestamp = -1;
@@ -258,6 +258,8 @@ public class DataEnumerator implements DataEnumeratorIF {
 								output[innerIndex] = resultSet.getBytes(actualColIndex);
 							}
 							break;
+						default:
+							break;
 					}
 					if (resultSet.wasNull()) {
 						output[innerIndex] = null;
@@ -272,7 +274,7 @@ public class DataEnumerator implements DataEnumeratorIF {
 				streamElement.setInternalPrimayKey(pkValue);
 			}
 			hasNext = resultSet.next();
-			if (hasNext == false) {
+			if (!hasNext) {
 				close();
 			}
 

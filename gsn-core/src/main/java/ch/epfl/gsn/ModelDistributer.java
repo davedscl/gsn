@@ -56,6 +56,13 @@ public class ModelDistributer implements VirtualSensorDataListener, VSensorState
 
     private static HashMap<Class<? extends DeliverySystem>, ModelDistributer> singletonMap = new HashMap<Class<? extends DeliverySystem>, ModelDistributer>();
     private Thread thread;
+    private ArrayList<DistributionRequest> listeners = new ArrayList<DistributionRequest>();
+
+    private LinkedBlockingQueue<DistributionRequest> locker = new LinkedBlockingQueue<DistributionRequest>();
+
+    private ConcurrentHashMap<DistributionRequest, DataEnumeratorIF> candidateListeners = new ConcurrentHashMap<DistributionRequest, DataEnumeratorIF>();
+
+    private ConcurrentHashMap<DistributionRequest, Boolean> candidatesForNextRound = new ConcurrentHashMap<DistributionRequest, Boolean>();
 
     /**
      * Constructs an instance of ModelDistributer, initializing the associated
@@ -143,13 +150,6 @@ public class ModelDistributer implements VirtualSensorDataListener, VSensorState
         return keepAlivePeriod;
     }
 
-    private ArrayList<DistributionRequest> listeners = new ArrayList<DistributionRequest>();
-
-    private LinkedBlockingQueue<DistributionRequest> locker = new LinkedBlockingQueue<DistributionRequest>();
-
-    private ConcurrentHashMap<DistributionRequest, DataEnumeratorIF> candidateListeners = new ConcurrentHashMap<DistributionRequest, DataEnumeratorIF>();
-
-    private ConcurrentHashMap<DistributionRequest, Boolean> candidatesForNextRound = new ConcurrentHashMap<DistributionRequest, Boolean>();
 
     /**
      * Adds a DistributionRequest listener to the ModelDistributer.
@@ -332,9 +332,7 @@ public class ModelDistributer implements VirtualSensorDataListener, VSensorState
 
             for (Entry<DistributionRequest, DataEnumeratorIF> item : candidateListeners.entrySet()) {
                 boolean success = flushStreamElement(item.getValue(), item.getKey());
-                if (success == false) {
-                    removeListener(item.getKey());
-                } else {
+                if (success) {
                     if (!item.getValue().hasMoreElements()) {
                         removeListenerFromCandidates(item.getKey());
                         // As we are limiting the number of elements returned by the JDBC driver
@@ -342,6 +340,9 @@ public class ModelDistributer implements VirtualSensorDataListener, VSensorState
                         // consume(null, item.getKey().getVSensorConfig()); //do not activate for models
                         // !!!!!
                     }
+                    
+                } else {
+                    removeListener(item.getKey());
                 }
             }
         }
@@ -389,8 +390,8 @@ public class ModelDistributer implements VirtualSensorDataListener, VSensorState
      * @return A DataEnumeratorIF object.
      */
     private DataEnumeratorIF makeDataEnum(DistributionRequest listener) {
-        ModelEnumerator mEnum = new ModelEnumerator(listener.getQuery(), listener.getModel());
-        return mEnum;
+        return new ModelEnumerator(listener.getQuery(), listener.getModel());
+
     }
 
     /**

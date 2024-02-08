@@ -90,9 +90,14 @@ public class ContainerConfig {
 
 	private int maxDBConnections;
 	private int maxSlidingDBConnections;
+	private ArrayList<KeyValueImp> msrMap;
+	private HashMap<String, String> msrMapCached;
 
+	/**
+	 * default Constructor
+	 */
 	public ContainerConfig() {
-
+		//default constructor
 	}
 
 	public ContainerConfig(int port, String timeFormat, boolean zmqEnabled, int zmqProxyPort, int zmqMetaPort,
@@ -248,7 +253,7 @@ public class ContainerConfig {
 	 * @return The database system associated with the configuration.
 	 */
 	public String getdatabaseSystem() {
-		if (isdatabaseSystemInitialzied == false) {
+		if (!isdatabaseSystemInitialzied) {
 			isdatabaseSystemInitialzied = true;
 
 			for (int i = 0; i < JDBC_URLS_PREFIX.length; i++) {
@@ -321,8 +326,6 @@ public class ContainerConfig {
 	/**
 	 * MSR MAP PART.
 	 */
-	private ArrayList<KeyValueImp> msrMap;
-	private HashMap<String, String> msrMapCached;
 
 	public HashMap<String, String> getMsrMap() {
 		if (msrMapCached == null) {

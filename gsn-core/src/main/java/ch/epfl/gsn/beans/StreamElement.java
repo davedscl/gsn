@@ -291,6 +291,8 @@ public final class StreamElement implements Serializable {
 				}
 
 				break;
+			default:
+				break;
 		}
 	}
 
@@ -572,6 +574,7 @@ public final class StreamElement implements Serializable {
 					break;
 				default:
 					logger.error("Type can't be converted : TypeID : " + fieldTypes[i]);
+					break;
 			}
 		}
 		return toReturn;
@@ -631,6 +634,7 @@ public final class StreamElement implements Serializable {
 						break;
 					default:
 						logger.error("The data type of the field cannot be parsed: " + df[j - 1].toString());
+						break;
 				}
 			}
 			ret[k] = new StreamElement(df, data, v.get(0).asLong());
@@ -694,6 +698,7 @@ public final class StreamElement implements Serializable {
 				default:
 					logger.error("The field name doesn't exit in the output structure : FieldName : "
 							+ (String) fieldNames[i]);
+					break;
 			}
 		}
 		return new StreamElement(outputFormat, values, Long.parseLong(timestamp));
@@ -731,7 +736,7 @@ public final class StreamElement implements Serializable {
 					break;
 				}
 			}
-			if (found == false) {
+			if (!found) {
 				continue;
 			}
 
@@ -770,6 +775,7 @@ public final class StreamElement implements Serializable {
 				default:
 					logger.error("The field name doesn't exit in the output structure : FieldName : "
 							+ (String) fieldNames[i]);
+					break;
 			}
 
 		}
@@ -781,8 +787,7 @@ public final class StreamElement implements Serializable {
 	}
 
 	public StreamElement4Rest toRest() {
-		StreamElement4Rest toReturn = new StreamElement4Rest(this);
-		return toReturn;
+		return new StreamElement4Rest(this);
 	}
 
 	/**
@@ -905,6 +910,8 @@ public final class StreamElement implements Serializable {
 							volume += ((String) fieldValues[i]).getBytes().length;
 						}
 
+						break;
+					default:
 						break;
 				}
 			}

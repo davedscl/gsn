@@ -47,8 +47,13 @@ public final class DataField implements Serializable {
    private String unit = "";
 
    private boolean index = false;
+   transient boolean fieldNameConvertedToLowerCase = false;
 
+   /**
+	 * default Constructor
+	 */
    public DataField() {
+      //default constructor
    }
 
    public DataField(final String fieldName, final String type, final String description) throws GSNRuntimeException {
@@ -86,10 +91,10 @@ public final class DataField implements Serializable {
       return this.description;
    }
 
-   transient boolean fieldNameConvertedToLowerCase = false;
+
 
    public String getName() {
-      if (fieldNameConvertedToLowerCase == false) {
+      if (!fieldNameConvertedToLowerCase) {
          fieldNameConvertedToLowerCase = true;
          this.name = name.toLowerCase();
       }

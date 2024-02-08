@@ -89,8 +89,26 @@ public class StreamSource implements Serializable {
   private AddressBean activeAddressBean; // To be used by the gui
 
   private transient QueryRewriter queryRewriter;
+  private transient boolean isStorageCountBased = false;
 
+  private WindowType windowingType = DEFAULT_WINDOW_TYPE;
+
+  public static final long STORAGE_SIZE_NOT_SET = -1;
+  public static final long DEFAULT_SLIDE_VALUE = 1;
+  public static final WindowType DEFAULT_WINDOW_TYPE = WindowType.TUPLE_BASED_SLIDE_ON_EACH_TUPLE;
+
+  private transient long parsedStorageSize = STORAGE_SIZE_NOT_SET;
+
+  private transient long parsedSlideValue = DEFAULT_SLIDE_VALUE;
+
+  private transient boolean isValidated = false;
+  private transient boolean validationResult = false;
+
+  /**
+	 * default Constructor
+	 */
   public StreamSource() {
+    //default constructor
   }
 
   public String getRawHistorySize() {
@@ -196,7 +214,7 @@ public class StreamSource implements Serializable {
   }
 
   public void setWrapper(AbstractWrapper wrapper) throws SQLException {
-    if (validate() == false) {
+    if (!validate()) {
       throw new GSNRuntimeException("Can't set the wrapper when the stream source is invalid.");
     }
 
@@ -216,21 +234,6 @@ public class StreamSource implements Serializable {
     return wrapper;
   }
 
-  private transient boolean isStorageCountBased = false;
-
-  private WindowType windowingType = DEFAULT_WINDOW_TYPE;
-
-  public static final long STORAGE_SIZE_NOT_SET = -1;
-  public static final long DEFAULT_SLIDE_VALUE = 1;
-  public static final WindowType DEFAULT_WINDOW_TYPE = WindowType.TUPLE_BASED_SLIDE_ON_EACH_TUPLE;
-
-  private transient long parsedStorageSize = STORAGE_SIZE_NOT_SET;
-
-  private transient long parsedSlideValue = DEFAULT_SLIDE_VALUE;
-
-  private transient boolean isValidated = false;
-  private transient boolean validationResult = false;
-
   /**
    * ;
    * Note that the validate method doesn't case if the wrapper variable or input
@@ -239,7 +242,7 @@ public class StreamSource implements Serializable {
    * @return
    */
   public boolean validate() {
-    if (isValidated == true) {
+    if (isValidated) {
       return validationResult;
     }
 
@@ -410,7 +413,7 @@ public class StreamSource implements Serializable {
   }
 
   public StringBuilder getUIDStr() {
-    if (validate() == false) {
+    if (!validate()) {
       return null;
     }
     if (uidS == null) {
@@ -456,7 +459,7 @@ public class StreamSource implements Serializable {
     if (getWrapper() == null) {
       throw new GSNRuntimeException("Wrapper object is null, most probably a bug, please report it !");
     }
-    if (validate() == false) {
+    if (!validate()) {
       throw new GSNRuntimeException("Validation of this object the stream source failed, please check the logs.");
     }
 
@@ -529,7 +532,7 @@ public class StreamSource implements Serializable {
       throw new GSNRuntimeException("Can't reset the input stream variable !.");
     }
     this.inputStream = is;
-    if (validate() == false) {
+    if (!validate()) {
       throw new GSNRuntimeException("You can't set the input stream on an invalid stream source. ");
     }
     return this;

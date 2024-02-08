@@ -68,6 +68,15 @@ public class DataDistributer implements VirtualSensorDataListener, VSensorStateC
     private Thread thread;
     private HashMap<StorageManager, Connection> connections = new HashMap<StorageManager, Connection>();
 
+    private HashMap<DistributionRequest, PreparedStatement> preparedStatements = new HashMap<DistributionRequest, PreparedStatement>();
+
+    private ArrayList<DistributionRequest> listeners = new ArrayList<DistributionRequest>();
+
+    private ConcurrentHashMap<DistributionRequest, DataEnumerator> candidateListeners = new ConcurrentHashMap<DistributionRequest, DataEnumerator>();
+
+    private LinkedBlockingQueue<DistributionRequest> locker = new LinkedBlockingQueue<DistributionRequest>();
+
+    private ConcurrentHashMap<DistributionRequest, Boolean> candidatesForNextRound = new ConcurrentHashMap<DistributionRequest, Boolean>();
     /**
      * Private constructor for the DataDistributer class.
      *
@@ -146,15 +155,6 @@ public class DataDistributer implements VirtualSensorDataListener, VSensorStateC
         return keepAlivePeriod;
     }
 
-    private HashMap<DistributionRequest, PreparedStatement> preparedStatements = new HashMap<DistributionRequest, PreparedStatement>();
-
-    private ArrayList<DistributionRequest> listeners = new ArrayList<DistributionRequest>();
-
-    private ConcurrentHashMap<DistributionRequest, DataEnumerator> candidateListeners = new ConcurrentHashMap<DistributionRequest, DataEnumerator>();
-
-    private LinkedBlockingQueue<DistributionRequest> locker = new LinkedBlockingQueue<DistributionRequest>();
-
-    private ConcurrentHashMap<DistributionRequest, Boolean> candidatesForNextRound = new ConcurrentHashMap<DistributionRequest, Boolean>();
 
     /**
      * Adds a new listener to the Distributer.
@@ -376,15 +376,15 @@ public class DataDistributer implements VirtualSensorDataListener, VSensorStateC
 
             for (Entry<DistributionRequest, DataEnumerator> item : candidateListeners.entrySet()) {
                 boolean success = flushStreamElement(item.getValue(), item.getKey());
-                if (success == false) {
-                    removeListener(item.getKey());
-                } else {
+                if (success) {
                     if (!item.getValue().hasMoreElements()) {
                         removeListenerFromCandidates(item.getKey());
                         // As we are limiting the number of elements returned by the JDBC driver
                         // we consume the eventual remaining items.
                         consume(null, item.getKey().getVSensorConfig());
                     }
+                } else {
+                    removeListener(item.getKey());
                 }
             }
         }

@@ -54,6 +54,7 @@ public class RestRemoteWrapper extends AbstractWrapper {
     private ObjectInputStream inputStream;
 
     private HttpResponse response;
+    private RemoteWrapperParamParser initParams;
 
     private HttpParams getHttpClientParams(int timeout) {
         HttpParams params = new BasicHttpParams();
@@ -73,7 +74,7 @@ public class RestRemoteWrapper extends AbstractWrapper {
         return structure;
     }
 
-    private RemoteWrapperParamParser initParams;
+   
 
     public String getWrapperName() {
         return "RestRemoteWrapper";
@@ -198,10 +199,8 @@ public class RestRemoteWrapper extends AbstractWrapper {
                 httpget.abort();
                 throw ex;
             } finally {
-                if (structure == null) {
-                    if (response != null && response.getEntity() != null) {
+                if (structure == null && response != null && response.getEntity() != null) {
                         response.getEntity().consumeContent();
-                    }
                 }
             }
         }

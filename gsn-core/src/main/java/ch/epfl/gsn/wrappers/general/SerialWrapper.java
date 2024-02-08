@@ -110,6 +110,9 @@ public class SerialWrapper extends AbstractWrapper implements SerialPortEventLis
 	private int output_format;
 
 	private int packet_length = 100;
+	private static final int MAXBUFFERSIZE = 1024;
+
+	private byte[] inputBuffer;
 
 	/*
 	 * Needs the following information from XML file : serialport : the name of
@@ -176,6 +179,8 @@ public class SerialWrapper extends AbstractWrapper implements SerialPortEventLis
 					break;
 				case 8:
 					dataBits = SerialPort.DATABITS_8;
+					break;
+				default:
 					break;
 			}
 		}
@@ -249,7 +254,7 @@ public class SerialWrapper extends AbstractWrapper implements SerialPortEventLis
 
 		// TASK : TRYING TO CONNECT USING THE ADDRESS
 		wnetPort = new SerialConnection(serialPort);
-		if (wnetPort.openConnection() == false) {
+		if (!wnetPort.openConnection()) {
 			return false;
 		}
 		wnetPort.addEventListener(this);
@@ -355,7 +360,9 @@ public class SerialWrapper extends AbstractWrapper implements SerialPortEventLis
 			try {
 				sPort.enableReceiveTimeout(30);
 			} catch (UnsupportedCommOperationException e) {
-
+				if(logger.isDebugEnabled()){
+					logger.debug(e.getMessage(), e);
+				}
 			}
 			open = true;
 			return true;
@@ -467,9 +474,7 @@ public class SerialWrapper extends AbstractWrapper implements SerialPortEventLis
 		threadCounter--;
 	}
 
-	private static final int MAXBUFFERSIZE = 1024;
 
-	private byte[] inputBuffer;
 
 	public void serialEvent(SerialPortEvent e) {
 		// if ( logger.isDebugEnabled( ) ) logger.debug( "Serial wrapper received a
@@ -501,6 +506,8 @@ public class SerialWrapper extends AbstractWrapper implements SerialPortEventLis
 			// If break event append BREAK RECEIVED message.
 			case SerialPortEvent.BI:
 				// messageAreaIn.append("\n--- BREAK RECEIVED ---\n");
+			default:
+				break;
 		}
 
 		if (logger.isDebugEnabled()) {

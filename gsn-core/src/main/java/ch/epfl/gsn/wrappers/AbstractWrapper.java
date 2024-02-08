@@ -87,7 +87,11 @@ public abstract class AbstractWrapper extends Thread implements Monitorable {
 	private Long oooCount = 0L;
 
 	private Long elementCount = 0L;
+	private long noOfCallsToPostSE = 0;
 
+	private final transient int aliasCode = Main.getWindowStorage().tableNameGenerator();
+	private final CharSequence aliasCodeS = Main.getWindowStorage().tableNameGeneratorInString(aliasCode);
+	public static final String TIME_FIELD = "timed";
 	/**
 	 * Returns the view name created for this listener. Note that, GSN creates
 	 * one view per listener.
@@ -138,7 +142,7 @@ public abstract class AbstractWrapper extends Thread implements Monitorable {
 				slidingHandler.removeStreamSource(ss);
 			}
 		}
-		if (listeners.size() == 0) {
+		if (listeners.isEmpty()) {
 			releaseResources();
 		}
 
@@ -206,10 +210,7 @@ public abstract class AbstractWrapper extends Thread implements Monitorable {
 		this.activeAddressBean = newVal;
 	}
 
-	private long noOfCallsToPostSE = 0;
-
-	private final transient int aliasCode = Main.getWindowStorage().tableNameGenerator();
-	private final CharSequence aliasCodeS = Main.getWindowStorage().tableNameGeneratorInString(aliasCode);
+	
 
 	public int getDBAlias() {
 		return aliasCode;
@@ -254,7 +255,7 @@ public abstract class AbstractWrapper extends Thread implements Monitorable {
 			return false;
 		}
 		try {
-			if (!isActive() || listeners.size() == 0) {
+			if (!isActive() || listeners.isEmpty()) {
 				return false;
 			}
 			if (!insertIntoWrapperTable(streamElement)) {
@@ -293,7 +294,7 @@ public abstract class AbstractWrapper extends Thread implements Monitorable {
 	 * @throws SQLException
 	 */
 	public boolean insertIntoWrapperTable(StreamElement se) throws SQLException {
-		if (listeners.size() == 0) {
+		if (listeners.isEmpty()) {
 			return false;
 		}
 		Connection conn = null;
@@ -328,7 +329,7 @@ public abstract class AbstractWrapper extends Thread implements Monitorable {
 	 * @throws SQLException if there is an error accessing the database.
 	 */
 	public boolean isOutOfOrder(StreamElement se) throws SQLException {
-		if (listeners.size() == 0) {
+		if (listeners.isEmpty()) {
 			return false;
 		}
 
@@ -394,7 +395,7 @@ public abstract class AbstractWrapper extends Thread implements Monitorable {
 
 	public boolean sendToWrapper(Object dataItem)
 			throws OperationNotSupportedException {
-		if (isActive == false) {
+		if (!isActive) {
 			throw new GSNRuntimeException(
 					"Sending to an inactive/disabled wrapper is not allowed !");
 		}
@@ -481,7 +482,7 @@ public abstract class AbstractWrapper extends Thread implements Monitorable {
 		Main.getWindowStorage().executeDropTable(aliasCodeS);
 	}
 
-	public static final String TIME_FIELD = "timed";
+
 
 	public final boolean initialize_wrapper() {
 		boolean r = initialize();
