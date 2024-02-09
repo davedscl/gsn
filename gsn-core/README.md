@@ -9,6 +9,7 @@ with a timestamp.
 ## Communication
 
 With other Cores it can communicate:
+
 - synchronously (acknowledging every stream element for reliability)
 - or asynchronously for speed and efficiency.
 
@@ -26,5 +27,4 @@ for getting data from a third-party GSN instance.
 
 Using the remote-push wrapper one can also receive data from
 the Services API, allowing the authenticated users to push stream-elements.
-
 
